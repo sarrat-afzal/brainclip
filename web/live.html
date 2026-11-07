@@ -5,192 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Brainclip live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
+  /* The live screen the room watches: a plotter drawing the player's brain on chart paper. */
   :root {
-    --bg: #07080c; --panel: #11141c; --line: #232838; --text: #f2f4f9; --muted: #8a93a6;
-    --hype: #ff4f86; --focus: #3fd3ff;
+    --paper: #edf1ea; --grid: #cddccf; --grid-major: #aac6b0;
+    --ink: #16233b; --ink-soft: #55627a; --red: #d7262e; --blue: #1f4fd1; --marker: #f3e33d;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: radial-gradient(1200px 600px at 80% -10%, #1a1030 0%, transparent 60%), var(--bg);
-         color: var(--text); font: 18px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-         height: 100vh; display: flex; flex-direction: column; padding: 28px 40px 32px; gap: 20px; overflow: hidden; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  .brand { font: 700 34px "Space Grotesk", Inter, sans-serif; letter-spacing: -0.03em; }
-  .brand span { color: var(--hype); }
-  .right { display: flex; align-items: center; gap: 22px; }
-  .timer { font: 700 28px "Space Grotesk", Inter, sans-serif; font-variant-numeric: tabular-nums; color: var(--muted); }
-  .status { font: 700 22px "Space Grotesk", Inter, sans-serif; padding: 8px 18px; border-radius: 999px;
-            background: var(--panel); border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
-  .status .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
-  .status.go .dot { background: #ff3b3b; box-shadow: 0 0 12px #ff3b3b; animation: pulse 1.4s infinite; }
-  @keyframes pulse { 50% { opacity: 0.35; } }
-  .meters { display: grid; grid-template-columns: 1fr 1fr 220px; gap: 18px; }
-  .meter { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 24px;
-           transition: border-color .2s, box-shadow .2s; }
-  .meter .name { color: var(--muted); font-size: 15px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
-  .meter .val { font: 700 64px/1.05 "Space Grotesk", Inter, sans-serif; font-variant-numeric: tabular-nums; margin-top: 6px; }
-  .meter.hype .val { color: var(--hype); }
-  .meter.focus .val { color: var(--focus); }
-  .meter.hype.spike { border-color: var(--hype); box-shadow: 0 0 0 2px var(--hype) inset, 0 0 40px rgba(255,79,134,.35); }
-  .meter.focus.spike { border-color: var(--focus); box-shadow: 0 0 0 2px var(--focus) inset, 0 0 40px rgba(63,211,255,.3); }
-  .meter.count .val { color: var(--text); }
-  .chart { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; position: relative; min-height: 200px; }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .legend { position: absolute; left: 24px; bottom: 16px; display: flex; gap: 22px; color: var(--muted); font-size: 15px; }
-  .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 8px; }
-  .toast { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(.8); opacity: 0;
-           padding: 22px 40px; border-radius: 20px; font: 700 44px "Space Grotesk", Inter, sans-serif; color: #07080c;
-           pointer-events: none; transition: opacity .25s, transform .25s; white-space: nowrap; }
-  .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  .toast.Hype { background: var(--hype); box-shadow: 0 0 80px rgba(255,79,134,.6); }
-  .toast.Locked { background: var(--focus); box-shadow: 0 0 80px rgba(63,211,255,.55); }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: Archivo, system-ui, sans-serif;
+         display: flex; flex-direction: column; padding: 28px 40px 32px; gap: 18px; overflow: hidden; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+  .mark { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 30px; font-stretch: 125%; letter-spacing: -0.02em; }
+  .mark svg { width: 58px; height: 28px; }
+  .clock { display: flex; align-items: center; gap: 18px; }
+  .status { font-weight: 700; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  .status .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--ink-soft); }
+  .status.rec .dot { background: var(--red); animation: blink 1.4s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  .timer { font-weight: 900; font-stretch: 62%; font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; }
+
+  .readouts { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--grid-major); }
+  .readout { padding: 12px 20px 14px; border-left: 1px solid var(--grid-major); }
+  .readout:first-child { border-left: 0; padding-left: 0; }
+  .readout .name { font-size: 19px; font-weight: 700; }
+  .readout .val { font-weight: 900; font-stretch: 62%; font-size: 92px; line-height: 0.95; font-variant-numeric: tabular-nums; }
+  .readout.hype .val { color: var(--red); }
+  .readout.focus .val { color: var(--blue); }
+  .readout .sub { font-size: 16px; color: var(--ink-soft); }
+  .readout.spike .val { background: linear-gradient(transparent 18%, rgba(243,227,61,.85) 18%, rgba(243,227,61,.85) 86%, transparent 86%); display: inline-block; padding: 0 8px; margin-left: -8px; }
+
+  .chart { flex: 1; position: relative; border: 3px solid var(--ink); min-height: 220px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .waiting[hidden] { display: none; }
+  .waiting { position: absolute; inset: 0; display: grid; place-items: center; font-family: Caveat, cursive; font-size: 40px; color: var(--ink-soft); }
+  @media (prefers-reduced-motion: reduce) { .status.rec .dot { animation: none; } }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">brain<span>clip</span></div>
-  <div class="right">
-    <div class="timer" id="timer">0:00</div>
-    <div class="status" id="status"><span class="dot"></span><span id="status-text">Connecting...</span></div>
-  </div>
-</header>
-<div class="meters">
-  <div class="meter hype" id="m-hype"><div class="name">Excitement vs. your last minute</div><div class="val" id="v-hype">–</div></div>
-  <div class="meter focus" id="m-focus"><div class="name">Focus vs. your last minute</div><div class="val" id="v-focus">–</div></div>
-  <div class="meter count"><div class="name">Moments caught</div><div class="val" id="v-count">0</div></div>
-</div>
-<div class="chart">
-  <canvas id="c"></canvas>
-  <div class="legend"><span><i style="background:var(--hype)"></i>Excitement</span><span><i style="background:var(--focus)"></i>Focus</span><span>Dots = moments that will be clipped</span></div>
-</div>
-<div class="toast" id="toast"></div>
-<script>
-// Same rules as detect.py: warm-up minute, rolling 60 s baseline (ending 5 s back),
-// Hype = excitement above 2.0 for 1.5 s, Locked in = focus above 1.5 for 6 s.
-const BASELINE_S = 60, WINDOW_S = 90, ROLL_S = 60, GAP_S = 5;
-const KINDS = {Hype: {cut: 2.0, minS: 1.5}, Locked: {cut: 1.5, minS: 6}};
-let rows = [], zEx = [], zFo = [], seen = 0;
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-
-function smooth(arr, n) {
-  return arr.map((_, i) => {
-    const s = arr.slice(Math.max(0, i - n + 1), i + 1);
-    return s.reduce((a, x) => a + x, 0) / s.length;
-  });
-}
-function meanSd(vals) {
-  const mu = vals.reduce((a, x) => a + x, 0) / vals.length;
-  return {mu, sd: Math.sqrt(vals.reduce((a, x) => a + (x - mu) ** 2, 0) / vals.length)};
-}
-function zAll(key) {
-  const sm = smooth(rows.map(r => r[key]), 3);
-  const warm = sm.filter((_, i) => rows[i].t <= BASELINE_S);
-  if (warm.length < 5) return sm.map(() => 0);
-  const w = meanSd(warm);
-  return sm.map((x, i) => {
-    const t = rows[i].t;
-    if (t <= BASELINE_S) return 0;
-    const win = [];
-    for (let j = i - 1; j >= 0 && rows[j].t >= t - ROLL_S; j--) if (rows[j].t <= t - GAP_S) win.push(sm[j]);
-    const b = win.length >= 5 ? meanSd(win) : w;
-    return (x - b.mu) / Math.max(b.sd, 0.25 * w.sd, 1e-6);
-  });
-}
-// peak index of every run above the line that lasted long enough to be clipped
-function peaks(zs, {cut, minS}) {
-  const out = [];
-  let best = -1, start = -1;
-  for (let i = 0; i <= zs.length; i++) {
-    if (i < zs.length && zs[i] > cut) {
-      if (start < 0) start = i;
-      if (best < 0 || zs[i] > zs[best]) best = i;
-    } else if (start >= 0) {
-      const end = Math.min(i, zs.length) - 1;
-      if (rows[end].t - rows[start].t + 0.5 >= minS) out.push(best);
-      best = -1; start = -1;
-    }
-  }
-  return out;
-}
-const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-function toast(kind) {
-  const el = document.getElementById('toast');
-  el.className = 'toast show ' + kind;
-  el.textContent = kind === 'Hype' ? 'Hype moment caught' : 'Locked in moment caught';
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => el.className = 'toast ' + kind, 1800);
-}
-
-function draw(pk) {
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  canvas.width = w * dpr; canvas.height = h * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-  if (rows.length < 2) return;
-  const tEnd = rows[rows.length - 1].t, tStart = Math.max(0, tEnd - WINDOW_S);
-  const first = rows.findIndex(r => r.t >= tStart);
-  const X = t => 24 + (t - tStart) / Math.max(1, tEnd - tStart) * (w - 48);
-  const Y = v => (h - 40) * 0.55 - Math.max(-4, Math.min(7, v)) * ((h - 40) / 13);
-
-  ctx.strokeStyle = '#232838'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(24, Y(0)); ctx.lineTo(w - 24, Y(0)); ctx.stroke();
-  ctx.setLineDash([6, 8]);
-  ctx.beginPath(); ctx.moveTo(24, Y(2)); ctx.lineTo(w - 24, Y(2)); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#8a93a6'; ctx.font = '600 14px Inter, system-ui';
-  ctx.fillText('spike line', 30, Y(2) - 8);
-
-  for (const [zs, color, kind] of [[zFo, '#3fd3ff', 'Locked'], [zEx, '#ff4f86', 'Hype']]) {
-    ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let i = first; i < rows.length; i++) i === first ? ctx.moveTo(X(rows[i].t), Y(zs[i])) : ctx.lineTo(X(rows[i].t), Y(zs[i]));
-    ctx.stroke();
-    ctx.shadowColor = color; ctx.shadowBlur = 20; ctx.fillStyle = color;
-    for (const i of pk[kind]) if (i >= first) { ctx.beginPath(); ctx.arc(X(rows[i].t), Y(zs[i]), 9, 0, Math.PI * 2); ctx.fill(); }
-    ctx.shadowBlur = 0;
-  }
-}
-
-async function poll() {
-  try {
-    const res = await fetch('brain.jsonl', {cache: 'no-store'});
-    const text = await res.text();
-    rows = text.split('\n').filter(Boolean).map(l => JSON.parse(l));
-    const last = rows[rows.length - 1];
-    const st = document.getElementById('status'), stt = document.getElementById('status-text');
-    zEx = zAll('excitement'); zFo = zAll('focus');
-    const pk = {Hype: peaks(zEx, KINDS.Hype), Locked: peaks(zFo, KINDS.Locked)};
-    const total = pk.Hype.length + pk.Locked.length;
-    if (!last) { stt.textContent = 'Waiting for brain data...'; }
-    else {
-      document.getElementById('timer').textContent = fmt(last.t);
-      if (last.t < BASELINE_S) {
-        st.className = 'status'; stt.textContent = `Warm-up · ${Math.ceil(BASELINE_S - last.t)}s`;
-      } else {
-        st.className = 'status go'; stt.textContent = 'Live';
-        const zh = zEx[zEx.length - 1], zf = zFo[zFo.length - 1];
-        document.getElementById('v-hype').textContent = (zh >= 0 ? '+' : '') + zh.toFixed(1);
-        document.getElementById('v-focus').textContent = (zf >= 0 ? '+' : '') + zf.toFixed(1);
-        document.getElementById('m-hype').classList.toggle('spike', zh > KINDS.Hype.cut);
-        document.getElementById('m-focus').classList.toggle('spike', zf > KINDS.Locked.cut);
-      }
-    }
-    document.getElementById('v-count').textContent = total;
-    if (total > seen && seen >= 0 && rows.length) {
-      const newest = [...pk.Hype.map(i => [i, 'Hype']), ...pk.Locked.map(i => [i, 'Locked'])].sort((a, b) => b[0] - a[0])[0];
-      if (newest) toast(newest[1]);
-    }
-    seen = total;
-    draw(pk);
-  } catch (e) { /* server not ready yet */ }
-}
-setInterval(poll, 500);
-window.addEventListener('resize', poll);
-poll();
-</script>
-</body>
-</html>
+  <div class="mark">
+    <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="2.6"

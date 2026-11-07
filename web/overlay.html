@@ -7,123 +7,39 @@
   Streamer overlay for OBS.
   OBS > Sources > + > Browser
     URL:    http://localhost:8765/overlay.html   (while run_session.py is running)
-    Width:  460   Height: 170
-  The background is transparent, so it floats on top of the game.
+    Width:  500   Height: 230
+  Everything outside the little chart-paper card is transparent.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
-  :root { --hype: #ff4f86; --focus: #3fd3ff; --text: #f2f4f9; --muted: #aab2c4; }
+  :root { --paper: #edf1ea; --ink: #16233b; --ink-soft: #55627a; --red: #d7262e; --blue: #1f4fd1; --marker: #f3e33d; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
-  body { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; color: var(--text); }
-  .card { position: relative; width: 440px; margin: 10px; padding: 12px 16px 10px; border-radius: 16px;
-          background: rgba(7, 8, 12, 0.72); border: 1px solid rgba(255,255,255,0.12);
-          backdrop-filter: blur(6px); box-shadow: 0 8px 30px rgba(0,0,0,.35); transition: box-shadow .25s, border-color .25s; }
-  .card.Hype { border-color: var(--hype); box-shadow: 0 0 30px rgba(255,79,134,.6); }
-  .card.Locked { border-color: var(--focus); box-shadow: 0 0 30px rgba(63,211,255,.55); }
-  .top { display: flex; justify-content: space-between; align-items: center; }
-  .brand { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
-  .brand span { color: var(--hype); }
-  .vals { display: flex; gap: 14px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .vals .h { color: var(--hype); }
-  .vals .f { color: var(--focus); }
-  canvas { display: block; width: 408px; height: 92px; margin-top: 6px; }
-  .flash { position: absolute; right: 14px; bottom: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px;
-           font-weight: 700; color: #07080c; opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; }
-  .flash.show { opacity: 1; transform: none; }
-  .flash.Hype { background: var(--hype); }
-  .flash.Locked { background: var(--focus); }
+  body { font-family: Archivo, system-ui, sans-serif; color: var(--ink); padding: 20px 26px 34px; }
+  .card { position: relative; width: 420px; background: var(--paper); border: 3px solid var(--ink);
+          box-shadow: 6px 6px 0 rgba(22,35,59,.85); transform: rotate(-1.2deg); }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 4px; border-bottom: 1px solid #aac6b0; }
+  .mark { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; font-stretch: 125%; }
+  .mark svg { width: 30px; height: 15px; }
+  .vals { display: flex; gap: 14px; font-weight: 900; font-stretch: 62%; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .vals .h { color: var(--red); }
+  .vals .f { color: var(--blue); }
+  .vals .w { font-family: Caveat, cursive; font-stretch: normal; font-weight: 700; color: var(--ink-soft); font-size: 22px; }
+  canvas { display: block; width: 414px; height: 110px; }
+  .note { position: absolute; right: -8px; bottom: -20px; font-family: Caveat, cursive; font-weight: 700; font-size: 30px; line-height: 1;
+          padding: 2px 12px 4px; background: var(--marker); transform: rotate(4deg) scale(.6); opacity: 0;
+          transition: opacity .2s, transform .25s; }
+  .note.show { opacity: 1; transform: rotate(4deg) scale(1); }
+  @media (prefers-reduced-motion: reduce) { .note { transition: none; } }
 </style>
 </head>
 <body>
-<div class="card" id="card">
+<div class="card">
   <div class="top">
-    <div class="brand">brain<span>clip</span></div>
-    <div class="vals"><span class="h" id="vh">EXC –</span><span class="f" id="vf">FOC –</span></div>
+    <div class="mark"><svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>brainclip</div>
+    <div class="vals" id="vals"><span class="w">warming up</span></div>
   </div>
-  <canvas id="c" width="816" height="184"></canvas>
-  <div class="flash" id="flash"></div>
-</div>
-<script>
-// Same rules as detect.py and live.html
-const BASELINE_S = 60, WINDOW_S = 45, ROLL_S = 60, GAP_S = 5;
-const KINDS = {Hype: {cut: 2.0, minS: 1.5}, Locked: {cut: 1.5, minS: 6}};
-let rows = [], seen = 0;
-const ctx = document.getElementById('c').getContext('2d');
-ctx.scale(2, 2);
-
-const smooth = (arr, n) => arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, x) => a + x, 0) / s.length; });
-const meanSd = v => { const mu = v.reduce((a, x) => a + x, 0) / v.length; return {mu, sd: Math.sqrt(v.reduce((a, x) => a + (x - mu) ** 2, 0) / v.length)}; };
-function zAll(key) {
-  const sm = smooth(rows.map(r => r[key]), 3);
-  const warm = sm.filter((_, i) => rows[i].t <= BASELINE_S);
-  if (warm.length < 5) return sm.map(() => 0);
-  const w = meanSd(warm);
-  return sm.map((x, i) => {
-    const t = rows[i].t;
-    if (t <= BASELINE_S) return 0;
-    const win = [];
-    for (let j = i - 1; j >= 0 && rows[j].t >= t - ROLL_S; j--) if (rows[j].t <= t - GAP_S) win.push(sm[j]);
-    const b = win.length >= 5 ? meanSd(win) : w;
-    return (x - b.mu) / Math.max(b.sd, 0.25 * w.sd, 1e-6);
-  });
-}
-function countRuns(zs, {cut, minS}) {
-  let n = 0, start = -1;
-  for (let i = 0; i <= zs.length; i++) {
-    if (i < zs.length && zs[i] > cut) { if (start < 0) start = i; }
-    else if (start >= 0) { if (rows[Math.min(i, zs.length) - 1].t - rows[start].t + 0.5 >= minS) n++; start = -1; }
-  }
-  return n;
-}
-function flash(kind) {
-  const card = document.getElementById('card'), f = document.getElementById('flash');
-  card.className = 'card ' + kind; f.className = 'flash show ' + kind;
-  f.textContent = kind === 'Hype' ? 'HYPE CLIPPED' : 'LOCKED IN CLIPPED';
-  clearTimeout(flash.t);
-  flash.t = setTimeout(() => { card.className = 'card'; f.className = 'flash ' + kind; }, 2000);
-}
-function draw(zEx, zFo) {
-  const w = 408, h = 92;
-  ctx.clearRect(0, 0, w, h);
-  if (rows.length < 2) return;
-  const tEnd = rows[rows.length - 1].t, tStart = Math.max(0, tEnd - WINDOW_S);
-  const first = rows.findIndex(r => r.t >= tStart);
-  const X = t => (t - tStart) / Math.max(1, tEnd - tStart) * w;
-  const Y = v => h * 0.6 - Math.max(-3, Math.min(6, v)) * (h / 10);
-  ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.setLineDash([4, 6]);
-  ctx.beginPath(); ctx.moveTo(0, Y(2)); ctx.lineTo(w, Y(2)); ctx.stroke(); ctx.setLineDash([]);
-  for (const [zs, color] of [[zFo, '#3fd3ff'], [zEx, '#ff4f86']]) {
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
-    ctx.shadowColor = color; ctx.shadowBlur = 8;
-    ctx.beginPath();
-    for (let i = first; i < rows.length; i++) i === first ? ctx.moveTo(X(rows[i].t), Y(zs[i])) : ctx.lineTo(X(rows[i].t), Y(zs[i]));
-    ctx.stroke(); ctx.shadowBlur = 0;
-  }
-}
-async function poll() {
-  try {
-    const text = await (await fetch('brain.jsonl', {cache: 'no-store'})).text();
-    rows = text.split('\n').filter(Boolean).map(l => JSON.parse(l));
-    if (!rows.length) return;
-    const zEx = zAll('excitement'), zFo = zAll('focus');
-    const last = rows[rows.length - 1];
-    if (last.t >= BASELINE_S) {
-      const zh = zEx[zEx.length - 1], zf = zFo[zFo.length - 1];
-      document.getElementById('vh').textContent = `EXC ${zh >= 0 ? '+' : ''}${zh.toFixed(1)}`;
-      document.getElementById('vf').textContent = `FOC ${zf >= 0 ? '+' : ''}${zf.toFixed(1)}`;
-    } else {
-      document.getElementById('vh').textContent = `WARM-UP ${Math.ceil(BASELINE_S - last.t)}s`;
-      document.getElementById('vf').textContent = '';
-    }
-    const hype = countRuns(zEx, KINDS.Hype), locked = countRuns(zFo, KINDS.Locked);
-    if (hype + locked > seen) flash(hype > (poll.h || 0) ? 'Hype' : 'Locked');
-    seen = hype + locked; poll.h = hype;
-    draw(zEx, zFo);
-  } catch (e) { /* server not ready yet */ }
-}
-setInterval(poll, 500);
-poll();
-</script>
-</body>
-</html>
+  <canvas id="c"></canvas>
+  <div class="note" id="note"></div>
+</div

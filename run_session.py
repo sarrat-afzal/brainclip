@@ -44,7 +44,7 @@ def start_live_page(session_dir, port):
     threading.Thread(target=server.serve_forever, daemon=True).start()
     url = f"http://localhost:{port}/live.html"
     print(f"Live graph: {url}")
-    print(f"OBS overlay (Browser Source, 460x170): http://localhost:{port}/overlay.html")
+    print(f"OBS overlay (Browser Source, 500x230): http://localhost:{port}/overlay.html")
     webbrowser.open(url)
     return server
 
