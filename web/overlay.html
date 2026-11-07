@@ -42,4 +42,91 @@
   </div>
   <canvas id="c"></canvas>
   <div class="note" id="note"></div>
-</div
+</div>
+<script>
+// Same rules as detect.py and live.html
+const BASELINE_S = 60, WINDOW_S = 45, ROLL_S = 60, GAP_S = 5;
+const KINDS = {Hype: {cut: 2.0, minS: 1.5}, Locked: {cut: 1.5, minS: 6}};
+const C = { paper: '#edf1ea', grid: '#cddccf', gridMajor: '#aac6b0', red: '#d7262e', blue: '#1f4fd1', marker: 'rgba(243,227,61,0.8)' };
+let rows = [];
+const seen = new Set();
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const smooth = (arr, n) => arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, x) => a + x, 0) / s.length; });
+const meanSd = v => { const mu = v.reduce((a, x) => a + x, 0) / v.length; return {mu, sd: Math.sqrt(v.reduce((a, x) => a + (x - mu) ** 2, 0) / v.length)}; };
+function zAll(key) {
+  const sm = smooth(rows.map(r => r[key]), 3);
+  const warm = sm.filter((_, i) => rows[i].t <= BASELINE_S);
+  if (warm.length < 5) return sm.map(() => 0);
+  const w = meanSd(warm);
+  return sm.map((x, i) => {
+    const t = rows[i].t;
+    if (t <= BASELINE_S) return 0;
+    const win = [];
+    for (let j = i - 1; j >= 0 && rows[j].t >= t - ROLL_S; j--) if (rows[j].t <= t - GAP_S) win.push(sm[j]);
+    const b = win.length >= 5 ? meanSd(win) : w;
+    return (x - b.mu) / Math.max(b.sd, 0.25 * w.sd, 1e-6);
+  });
+}
+function runs(zs, {cut, minS}) {
+  const out = []; let start = -1;
+  for (let i = 0; i <= zs.length; i++) {
+    if (i < zs.length && zs[i] > cut) { if (start < 0) start = i; }
+    else if (start >= 0) { const end = Math.min(i, zs.length) - 1; if (rows[end].t - rows[start].t + 0.5 >= minS) out.push({start, end}); start = -1; }
+  }
+  return out;
+}
+const signed = z => Math.abs(z) < 0.05 ? '0.0' : (z > 0 ? '+' : '−') + Math.abs(z).toFixed(1);
+
+function draw(zEx, zFo, marks) {
+  const dpr = 2, w = 414, h = 110;
+  canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, w, h);
+  for (let x = 0, i = 0; x <= w; x += 10, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, h); ctx.stroke(); }
+  for (let y = 0, i = 0; y <= h; y += 10, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5); ctx.stroke(); }
+  if (rows.length < 2) return;
+  const tEnd = rows[rows.length - 1].t, tStart = Math.max(0, tEnd - WINDOW_S);
+  const first = Math.max(0, rows.findIndex(r => r.t >= tStart));
+  const X = t => 6 + (t - tStart) / Math.max(10, tEnd - tStart) * (w - 22);
+  const Y = v => 8 + (7 - Math.max(-3, Math.min(7, v))) / 10 * (h - 16);
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = C.marker;
+  for (const m of marks) if (rows[m.end].t >= tStart) ctx.fillRect(X(Math.max(tStart, rows[m.start].t - 2)), 4, X(rows[m.end].t + 1) - X(Math.max(tStart, rows[m.start].t - 2)), h - 8);
+  ctx.restore();
+  for (const [zs, color] of [[zFo, C.blue], [zEx, C.red]]) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = first; i < rows.length; i++) i === first ? ctx.moveTo(X(rows[i].t), Y(zs[i])) : ctx.lineTo(X(rows[i].t), Y(zs[i]));
+    ctx.stroke();
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(X(tEnd), Y(zs[zs.length - 1]), 4.5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+function note(kind) {
+  const n = document.getElementById('note');
+  n.textContent = kind === 'Hype' ? 'hype! clipped' : 'locked in, clipped';
+  n.style.color = kind === 'Hype' ? C.red : C.blue;
+  n.classList.add('show');
+  clearTimeout(note.t); note.t = setTimeout(() => n.classList.remove('show'), 2200);
+}
+async function poll() {
+  try { rows = (await (await fetch('brain.jsonl', {cache: 'no-store'})).text()).split('\n').filter(Boolean).map(l => JSON.parse(l)); }
+  catch (e) { return; }
+  if (!rows.length) return;
+  const zEx = zAll('excitement'), zFo = zAll('focus');
+  const last = rows[rows.length - 1];
+  document.getElementById('vals').innerHTML = last.t < BASELINE_S
+    ? `<span class="w">warming up, ${Math.ceil(BASELINE_S - last.t)} s</span>`
+    : `<span class="h">${signed(zEx[zEx.length - 1])}</span><span class="f">${signed(zFo[zFo.length - 1])}</span>`;
+  const marks = [];
+  for (const [kind, zs] of [['Hype', zEx], ['Locked', zFo]]) for (const r of runs(zs, KINDS[kind])) {
+    marks.push(r);
+    const key = kind + rows[r.start].t;
+    if (!seen.has(key)) { seen.add(key); note(kind); }
+  }
+  draw(zEx, zFo, marks);
+}
+setInterval(poll, 500);
+poll();
+</script>
+</body>
+</html>

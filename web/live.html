@@ -47,4 +47,212 @@
 <body>
 <header>
   <div class="mark">
-    <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="2.6"
+    <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+    brainclip
+  </div>
+  <div class="clock">
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">Connecting to the headset</span></div>
+    <div class="timer" id="timer">0:00</div>
+  </div>
+</header>
+
+<div class="readouts">
+  <div class="readout hype" id="r-hype"><div class="name">Excitement</div><div class="val" id="v-hype">0.0</div><div class="sub">compared to your last minute</div></div>
+  <div class="readout focus" id="r-focus"><div class="name">Focus</div><div class="val" id="v-focus">0.0</div><div class="sub">compared to your last minute</div></div>
+  <div class="readout"><div class="name">Moments caught</div><div class="val" id="v-count">0</div><div class="sub" id="last-caught">None yet. Keep playing.</div></div>
+</div>
+
+<div class="chart"><canvas id="c" aria-label="Live brain activity"></canvas><div class="waiting" id="waiting">waiting for the first reading...</div></div>
+
+<script>
+// Same rules as detect.py: 60 s warm-up, rolling baseline (60 s ago up to 5 s ago),
+// Hype = excitement above 2.0 for 1.5 s, Locked in = focus above 1.5 for 6 s.
+const BASELINE_S = 60, WINDOW_S = 90, ROLL_S = 60, GAP_S = 5;
+const KINDS = {Hype: {cut: 2.0, minS: 1.5, col: 'excitement'}, Locked: {cut: 1.5, minS: 6, col: 'focus'}};
+const C = { paper: '#edf1ea', grid: '#cddccf', gridMajor: '#aac6b0', ink: '#16233b', soft: '#55627a',
+            red: '#d7262e', blue: '#1f4fd1', marker: 'rgba(243,227,61,0.8)' };
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let rows = [], zEx = [], zFo = [];
+const caught = new Map();   // key -> {kind, start, end, best, born, n}
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const smooth = (arr, n) => arr.map((_, i) => { const s = arr.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, x) => a + x, 0) / s.length; });
+const meanSd = v => { const mu = v.reduce((a, x) => a + x, 0) / v.length; return {mu, sd: Math.sqrt(v.reduce((a, x) => a + (x - mu) ** 2, 0) / v.length)}; };
+function zAll(key) {
+  const sm = smooth(rows.map(r => r[key]), 3);
+  const warm = sm.filter((_, i) => rows[i].t <= BASELINE_S);
+  if (warm.length < 5) return sm.map(() => 0);
+  const w = meanSd(warm);
+  return sm.map((x, i) => {
+    const t = rows[i].t;
+    if (t <= BASELINE_S) return 0;
+    const win = [];
+    for (let j = i - 1; j >= 0 && rows[j].t >= t - ROLL_S; j--) if (rows[j].t <= t - GAP_S) win.push(sm[j]);
+    const b = win.length >= 5 ? meanSd(win) : w;
+    return (x - b.mu) / Math.max(b.sd, 0.25 * w.sd, 1e-6);
+  });
+}
+// every run above the line long enough to be clipped (still-open runs count once they're long enough)
+function runs(zs, {cut, minS}) {
+  const out = [];
+  let start = -1, best = -1;
+  for (let i = 0; i <= zs.length; i++) {
+    if (i < zs.length && zs[i] > cut) {
+      if (start < 0) start = i;
+      if (best < 0 || zs[i] > zs[best]) best = i;
+    } else if (start >= 0) {
+      const end = Math.min(i, zs.length) - 1;
+      if (rows[end].t - rows[start].t + 0.5 >= minS) out.push({start, end, best});
+      start = -1; best = -1;
+    }
+  }
+  return out;
+}
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const signed = z => Math.abs(z) < 0.05 ? '0.0' : (z > 0 ? '+' : '−') + Math.abs(z).toFixed(1);
+
+function paper(w, h, cell = 16) {
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, w, h);
+  for (let x = 0, i = 0; x <= w; x += cell, i++) {
+    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+  }
+  for (let y = 0, i = 0; y <= h; y += cell, i++) {
+    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); ctx.stroke();
+  }
+}
+function highlight(x0, x1, y0, y1, seed) {
+  if (x1 - x0 < 2) return;
+  const r = n => Math.abs((Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1);
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = C.marker;
+  ctx.beginPath();
+  ctx.moveTo(x0 + 3, y0 + r(1) * 5);
+  ctx.lineTo(x1 - 2, y0 + r(2) * 6);
+  ctx.quadraticCurveTo(x1 + 5, (y0 + y1) / 2, x1 - 1, y1 - r(3) * 5);
+  ctx.lineTo(x0 + 1, y1 - r(4) * 6);
+  ctx.quadraticCurveTo(x0 - 5, (y0 + y1) / 2, x0 + 3, y0 + r(1) * 5);
+  ctx.fill(); ctx.restore();
+}
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  paper(w, h);
+  if (rows.length < 2) return false;
+  const tEnd = rows[rows.length - 1].t, tStart = Math.max(0, tEnd - WINDOW_S);
+  const first = Math.max(0, rows.findIndex(r => r.t >= tStart));
+  const padTop = 70, padBot = 34, right = w - 70;
+  const X = t => 24 + (t - tStart) / Math.max(1, Math.max(WINDOW_S * 0.25, tEnd - tStart)) * (right - 24);
+  const vmax = 8, vmin = -4;
+  const Y = v => padTop + (vmax - Math.max(vmin, Math.min(vmax, v))) / (vmax - vmin) * (h - padTop - padBot);
+  const now = performance.now();
+  let animating = false;
+
+  // warm-up hatching
+  if (tStart < BASELINE_S) {
+    const x1 = Math.min(X(BASELINE_S), X(tEnd));
+    ctx.save(); ctx.beginPath(); ctx.rect(X(tStart), padTop - 12, x1 - X(tStart), h - padTop - padBot + 12); ctx.clip();
+    ctx.strokeStyle = 'rgba(85,98,122,.2)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = X(tStart) - h; x < x1; x += 11) { ctx.moveTo(x, h); ctx.lineTo(x + h, 0); }
+    ctx.stroke(); ctx.restore();
+    ctx.fillStyle = C.soft; ctx.font = '700 30px Caveat, cursive';
+    ctx.fillText('warm-up, never clipped', X(tStart) + 12, padTop - 24);
+  }
+
+  // clip line
+  ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.45; ctx.setLineDash([8, 8]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(24, Y(2)); ctx.lineTo(right, Y(2)); ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+  ctx.fillStyle = C.soft; ctx.font = '600 15px Archivo, system-ui';
+  ctx.fillText('clip line', right + 10, Y(2) + 5);
+
+  // highlighter swipes for caught moments, drawn left to right as they're caught
+  for (const m of caught.values()) {
+    if (rows[m.end].t < tStart) continue;
+    const p = reduceMotion ? 1 : Math.min(1, (now - m.born) / 700);
+    if (p < 1) animating = true;
+    const x0 = X(Math.max(tStart, rows[m.start].t - 2)), x1full = X(rows[m.end].t + 1);
+    highlight(x0, x0 + (x1full - x0) * p, padTop - 14, h - padBot + 6, m.n);
+  }
+
+  // traces
+  for (const [zs, color] of [[zFo, C.blue], [zEx, C.red]]) {
+    ctx.strokeStyle = color; ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = first; i < rows.length; i++) i === first ? ctx.moveTo(X(rows[i].t), Y(zs[i])) : ctx.lineTo(X(rows[i].t), Y(zs[i]));
+    ctx.stroke();
+    // pen tip
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(X(tEnd), Y(zs[zs.length - 1]), 8, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // handwritten notes over caught moments
+  for (const m of caught.values()) {
+    if (rows[m.end].t < tStart) continue;
+    const p = reduceMotion ? 1 : Math.min(1, Math.max(0, (now - m.born - 350) / 400));
+    if (p < 1) animating = true;
+    ctx.save();
+    ctx.globalAlpha = p;
+    ctx.translate(X(Math.max(tStart, rows[m.start].t - 2)) + 6, padTop - 22);
+    ctx.rotate(-0.05);
+    ctx.fillStyle = m.kind === 'Hype' ? C.red : C.blue;
+    ctx.font = '700 36px Caveat, cursive';
+    ctx.fillText(m.kind === 'Hype' ? `#${m.n} hype! clipped` : `#${m.n} locked in, clipped`, 0, 0);
+    ctx.restore();
+  }
+
+  // time ticks
+  ctx.fillStyle = C.soft; ctx.font = '600 15px Archivo, system-ui';
+  for (let t = Math.ceil(tStart / 15) * 15; t <= tEnd; t += 15) if (t > 0) ctx.fillText(fmt(t), X(t) - 14, h - 10);
+  return animating;
+}
+
+let raf = null;
+function frame() { raf = draw() ? requestAnimationFrame(frame) : null; }
+function redraw() { if (!raf) frame(); }
+
+async function poll() {
+  try {
+    const res = await fetch('brain.jsonl', {cache: 'no-store'});
+    rows = (await res.text()).split('\n').filter(Boolean).map(l => JSON.parse(l));
+  } catch (e) { return; }
+  const last = rows[rows.length - 1];
+  document.getElementById('waiting').hidden = !!last;
+  if (!last) return;
+  zEx = zAll('excitement'); zFo = zAll('focus');
+  document.getElementById('timer').textContent = fmt(last.t);
+  const st = document.getElementById('status'), stt = document.getElementById('status-text');
+  if (last.t < BASELINE_S) {
+    st.className = 'status';
+    stt.textContent = `Warm-up, play casually: ${Math.ceil(BASELINE_S - last.t)} s left`;
+  } else {
+    st.className = 'status rec'; stt.textContent = 'Recording';
+    const zh = zEx[zEx.length - 1], zf = zFo[zFo.length - 1];
+    document.getElementById('v-hype').textContent = signed(zh);
+    document.getElementById('v-focus').textContent = signed(zf);
+    document.getElementById('r-hype').classList.toggle('spike', zh > KINDS.Hype.cut);
+    document.getElementById('r-focus').classList.toggle('spike', zf > KINDS.Locked.cut);
+  }
+  for (const [kind, zs] of [['Hype', zEx], ['Locked', zFo]]) {
+    for (const r of runs(zs, KINDS[kind])) {
+      const key = kind + rows[r.start].t;
+      if (caught.has(key)) { Object.assign(caught.get(key), {end: r.end, best: r.best}); continue; }
+      caught.set(key, {kind, ...r, born: performance.now(), n: caught.size + 1});
+      document.getElementById('last-caught').textContent =
+        `Latest: ${kind === 'Hype' ? 'hype' : 'locked in'} at ${fmt(rows[r.start].t)}`;
+    }
+  }
+  document.getElementById('v-count').textContent = caught.size;
+  redraw();
+}
+setInterval(poll, 500);
+window.addEventListener('resize', redraw);
+document.fonts.ready.then(redraw);
+poll();
+</script>
+</body>
+</html>

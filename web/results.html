@@ -70,4 +70,293 @@
   .row .k { font-weight: 800; font-size: 19px; }
   .row .k.Hype { color: var(--red); }
   .row .k.Locked { color: var(--blue); }
-  .row .when { color: var(--ink-soft); font-size: 15px;
+  .row .when { color: var(--ink-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .row svg { width: 70px; height: 18px; }
+
+  .printout { margin-top: 40px; }
+  .printout-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .printout h2 { margin: 0; font-size: 26px; font-weight: 900; font-stretch: 125%; letter-spacing: -0.02em; }
+  .key { display: flex; gap: 22px; color: var(--ink-soft); font-size: 15px; flex-wrap: wrap; }
+  .key i { display: inline-block; width: 26px; height: 3px; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
+  .key .hl { width: 26px; height: 12px; background: var(--marker); border-radius: 0; }
+  .sheet { border: 2px solid var(--ink); }
+  .sheet canvas { cursor: pointer; }
+  footer { margin-top: 14px; color: var(--ink-soft); font-size: 14px; max-width: 80ch; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">
+      <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      brainclip
+    </div>
+    <div class="actions" id="actions"></div>
+  </header>
+
+  <section class="title">
+    <h1 id="title">Your reel</h1>
+    <p class="lede" id="lede"></p>
+  </section>
+
+  <section class="stage">
+    <div>
+      <div class="screen" id="screen"></div>
+      <div class="replay" id="replay" hidden>
+        <div class="replay-head">
+          <h2>What your brain did during this clip</h2>
+          <p id="replay-stat"></p>
+        </div>
+        <div class="strip"><canvas id="zoom" aria-label="Brain activity during the playing clip"></canvas></div>
+      </div>
+    </div>
+    <aside class="log">
+      <h2>Moments your brain flagged</h2>
+      <p class="hint">In the order they happened. Pick one to watch it.</p>
+      <div class="rows" id="rows"></div>
+    </aside>
+  </section>
+
+  <section class="printout">
+    <div class="printout-head">
+      <h2>The whole session</h2>
+      <div class="key">
+        <span><i style="background:var(--red)"></i>Excitement</span>
+        <span><i style="background:var(--blue)"></i>Focus</span>
+        <span><i class="hl"></i>Clipped</span>
+      </div>
+    </div>
+    <div class="sheet"><div class="strip tall"><canvas id="sheet" tabindex="0" aria-label="Brain activity for the whole session. Click a highlighted part to watch that clip."></canvas></div></div>
+    <footer>Each line shows how far your brain activity moved from your own previous minute. Brainclip clips the moments that stand out for you, not for some average player.</footer>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script>
+const D = window.BRAINCLIP;
+const moments = D.moments || [];
+const R = D.readings || [];             // [time, excitement z, focus z]
+const hasClips = moments.some(m => m.file);
+const C = { paper: '#edf1ea', grid: '#cddccf', gridMajor: '#aac6b0', ink: '#16233b', soft: '#55627a',
+            red: '#d7262e', blue: '#1f4fd1', marker: 'rgba(243,227,61,0.78)' };
+let current = null, reelMode = false, video = null;
+
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const kind = m => m.label === 'Hype' ? 'Hype' : 'Locked';
+const pen = m => m.label === 'Hype' ? C.red : C.blue;
+const minutes = Math.max(1, Math.round(D.duration / 60));
+
+document.title = `${D.player}'s reel · Brainclip`;
+document.getElementById('title').textContent = `${D.player}'s reel`;
+document.getElementById('lede').textContent =
+  `${D.game ? D.game + ', ' : ''}${minutes} minute${minutes > 1 ? 's' : ''} of play. ` +
+  (moments.length ? `Your brain flagged ${moments.length} moment${moments.length > 1 ? 's' : ''}, and Brainclip cut them into this reel.`
+                  : `Nothing stood out enough to clip this time.`);
+
+const screen = document.getElementById('screen');
+if (hasClips) {
+  screen.innerHTML = '<video id="v" playsinline controls></video><div class="note" id="note" hidden></div>';
+  video = document.getElementById('v');
+  video.addEventListener('ended', () => {
+    if (!reelMode) return;
+    const i = moments.indexOf(current);
+    if (i < moments.length - 1) play(moments[i + 1], true); else reelMode = false;
+  });
+  const tick = () => { drawZoom(); drawSheet(); };
+  video.addEventListener('timeupdate', tick);
+  video.addEventListener('seeked', tick);
+  document.getElementById('actions').innerHTML =
+    `<button class="primary" id="reel">Play the reel</button>` +
+    (D.has_reel ? `<a class="btn ghost" href="reel.mp4" download>Download reel</a>` : '');
+  document.getElementById('reel').onclick = () => play(moments[0], true);
+} else {
+  screen.innerHTML = `<div class="empty">${moments.length
+    ? 'Moments were found, but this session has no recording to cut them from.'
+    : 'No moments stood out this session. Play a little longer, or lower the threshold with report.py.'}</div>`;
+}
+
+const maxZ = Math.max(1, ...moments.map(m => m.peak_z));
+const strength = m => {
+  const w = Math.max(6, Math.round(Math.min(1, m.peak_z / maxZ) * 66));
+  return `<svg viewBox="0 0 70 18" aria-label="strength"><path d="M2 12 L${w} ${12 - Math.min(8, w / 8)}" stroke="${pen(m)}" stroke-width="5" stroke-linecap="round"/></svg>`;
+};
+document.getElementById('rows').innerHTML = moments.map((m, i) => `
+  <div class="row" data-i="${i}" tabindex="0" role="button" aria-label="Watch moment ${m.id}, ${m.label}">
+    <div class="n">${m.id}</div>
+    <div><div class="k ${kind(m)}">${m.label}</div><div class="when">${fmt(m.clip_start)} to ${fmt(m.clip_end)}</div></div>
+    ${strength(m)}
+  </div>`).join('');
+document.querySelectorAll('.row').forEach(el => {
+  el.onclick = () => play(moments[+el.dataset.i], false);
+  el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+});
+
+function play(m, reel) {
+  current = m; reelMode = reel;
+  document.querySelectorAll('.row').forEach(el => el.classList.toggle('on', moments[+el.dataset.i] === m));
+  document.getElementById('replay').hidden = false;
+  const peak = m.peak_z > 9.9 ? '10+' : m.peak_z.toFixed(1);
+  document.getElementById('replay-stat').innerHTML =
+    `${m.label === 'Hype' ? 'Excitement' : 'Focus'} peaked at <b style="color:${pen(m)}">+${peak}</b> above your last minute`;
+  if (video && m.file) {
+    video.src = m.file;
+    if (reel || play.started) video.play().catch(() => {});
+    const note = document.getElementById('note');
+    note.hidden = false;
+    note.textContent = m.label === 'Hype' ? `#${m.id} hype!` : `#${m.id} locked in`;
+    note.style.color = pen(m);
+  }
+  play.started = true;
+  drawZoom(); drawSheet();
+}
+
+// ---------- drawing ----------
+function setup(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, w, h);
+  return [ctx, w, h];
+}
+function paper(ctx, w, h, cell = 12) {
+  for (let x = 0, i = 0; x <= w; x += cell, i++) {
+    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
+  }
+  for (let y = 0, i = 0; y <= h; y += cell, i++) {
+    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); ctx.stroke();
+  }
+}
+// a highlighter swipe: slightly uneven edges, ink-like ends
+function highlight(ctx, x0, x1, y0, y1, seed) {
+  const r = n => (Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1;
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = C.marker;
+  ctx.beginPath();
+  ctx.moveTo(x0 + 3, y0 + r(1) * 4);
+  ctx.lineTo(x1 - 2, y0 + r(2) * 5);
+  ctx.quadraticCurveTo(x1 + 4, (y0 + y1) / 2, x1 - 1, y1 - r(3) * 4);
+  ctx.lineTo(x0 + 1, y1 - r(4) * 5);
+  ctx.quadraticCurveTo(x0 - 4, (y0 + y1) / 2, x0 + 3, y0 + r(1) * 4);
+  ctx.fill();
+  ctx.restore();
+}
+function trace(ctx, pts, X, Y, col, color, width, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  pts.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col])));
+  ctx.stroke(); ctx.restore();
+}
+const nowT = () => current && video ? current.clip_start + video.currentTime : null;
+
+function drawZoom() {
+  if (!current) return;
+  const [ctx, w, h] = setup(document.getElementById('zoom'));
+  paper(ctx, w, h, 12);
+  const t0 = current.clip_start, t1 = current.clip_end;
+  const pts = R.filter(r => r[0] >= t0 - 1 && r[0] <= t1 + 1);
+  if (pts.length < 2) return;
+  const vals = pts.flatMap(r => [r[1], r[2]]);
+  const vmax = Math.min(14, Math.max(4, ...vals)) * 1.1, vmin = Math.max(-4, Math.min(-1.5, ...vals));
+  const X = t => 12 + (t - t0) / Math.max(1, t1 - t0) * (w - 24);
+  const Y = v => 12 + (vmax - Math.max(vmin, Math.min(vmax, v))) / (vmax - vmin) * (h - 24);
+  highlight(ctx, X(current.start), X(current.end), 8, h - 8, current.id);
+  const tNow = nowT();
+  const main = current.label === 'Hype' ? 1 : 2, other = main === 1 ? 2 : 1;
+  const color = c => c === 1 ? C.red : C.blue;
+  trace(ctx, pts, X, Y, other, color(other), 2, 0.35);
+  if (tNow == null) { trace(ctx, pts, X, Y, main, color(main), 3.2); return; }
+  // the pen has drawn up to "now"; the rest is still faint
+  trace(ctx, pts, X, Y, main, color(main), 3.2, 0.18);
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, X(tNow), h); ctx.clip();
+  trace(ctx, pts, X, Y, main, color(main), 3.2); ctx.restore();
+  // pen tip
+  let tip = pts[0];
+  for (const r of pts) if (r[0] <= tNow) tip = r;
+  ctx.fillStyle = color(main);
+  ctx.beginPath(); ctx.arc(X(tNow), Y(tip[main]), 6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.moveTo(X(tNow), 0); ctx.lineTo(X(tNow), h); ctx.stroke(); ctx.setLineDash([]);
+}
+
+let geo = null;
+function drawSheet() {
+  const canvas = document.getElementById('sheet');
+  const [ctx, w, h] = setup(canvas);
+  paper(ctx, w, h, 12);
+  if (!R.length) return;
+  const t0 = R[0][0], t1 = R[R.length - 1][0];
+  const padX = 14, padTop = 46, padBot = 26;
+  const X = t => padX + (t - t0) / Math.max(1, t1 - t0) * (w - 2 * padX);
+  const vmax = 9, vmin = -4;
+  const Y = v => padTop + (vmax - Math.max(vmin, Math.min(vmax, v))) / (vmax - vmin) * (h - padTop - padBot);
+  geo = {t0, t1, padX, w};
+
+  // warm-up: pencil hatching + note
+  ctx.save(); ctx.strokeStyle = 'rgba(85,98,122,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(X(t0), padTop - 10, X(D.baseline_s) - X(t0), h - padTop - padBot + 10); ctx.clip();
+  for (let x = X(t0) - h; x < X(D.baseline_s); x += 9) { ctx.moveTo(x, h); ctx.lineTo(x + h, 0); }
+  ctx.stroke(); ctx.restore();
+  ctx.fillStyle = C.soft; ctx.font = '600 24px Caveat, cursive';
+  ctx.fillText('warm-up, never clipped', X(t0) + 8, padTop - 16);
+
+  for (const m of moments) highlight(ctx, X(m.clip_start), X(m.clip_end), padTop - 6, h - padBot + 4, m.id);
+
+  trace(ctx, R, X, Y, 2, C.blue, 1.8);
+  trace(ctx, R, X, Y, 1, C.red, 1.8);
+
+  // handwritten notes over each clip
+  ctx.font = '700 26px Caveat, cursive';
+  for (const m of moments) {
+    ctx.save();
+    ctx.translate(X(m.clip_start) + 4, padTop - 14);
+    ctx.rotate(-0.05);
+    ctx.fillStyle = pen(m);
+    ctx.fillText(m.label === 'Hype' ? `#${m.id} hype!` : `#${m.id} locked in`, 0, 0);
+    ctx.restore();
+    if (m === current) {
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5;
+      ctx.strokeRect(X(m.clip_start) - 3, padTop - 8, X(m.clip_end) - X(m.clip_start) + 6, h - padTop - padBot + 14);
+    }
+  }
+  // time ticks
+  ctx.fillStyle = C.soft; ctx.font = '600 13px Archivo, system-ui';
+  const step = (t1 - t0) > 600 ? 120 : 60;
+  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+    if (X(t) > w - 30 || t === 0) continue;
+    ctx.fillText(fmt(t), X(t) - 12, h - 8);
+  }
+  const tNow = nowT();
+  if (tNow != null && video.currentTime > 0) {
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(tNow), padTop - 8); ctx.lineTo(X(tNow), h - padBot + 6); ctx.stroke();
+  }
+}
+
+const sheet = document.getElementById('sheet');
+sheet.addEventListener('click', e => {
+  if (!geo) return;
+  const rect = sheet.getBoundingClientRect();
+  const t = geo.t0 + (e.clientX - rect.left - geo.padX) / (geo.w - 2 * geo.padX) * (geo.t1 - geo.t0);
+  const hit = moments.find(m => t >= m.clip_start && t <= m.clip_end);
+  if (hit) play(hit, false);
+});
+sheet.addEventListener('keydown', e => {
+  if (!moments.length || !['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+  const i = Math.max(0, moments.indexOf(current));
+  play(moments[(i + (e.key === 'ArrowRight' ? 1 : moments.length - 1)) % moments.length], false);
+});
+window.addEventListener('resize', () => { drawZoom(); drawSheet(); });
+document.fonts.ready.then(() => { drawSheet(); if (moments.length) play(moments[0], false); });
+drawSheet();
+</script>
+</body>
+</html>
