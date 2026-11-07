@@ -6,132 +6,232 @@
 <title>Brainclip reel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Archivo:wght@400..800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  /* Brainclip: the reel as an EEG printout. Paper, two pens, one highlighter. */
+  /* Brainclip reel page. Pink ECG grid paper, wine ink, a cherry pen and a periwinkle pen. */
   :root {
-    --paper: #edf1ea;
-    --paper-deep: #e2e9df;
-    --grid: #cddccf;
-    --grid-major: #aac6b0;
-    --ink: #16233b;
-    --ink-soft: #55627a;
-    --red: #d7262e;       /* Hype pen */
-    --blue: #1f4fd1;      /* Locked in pen */
-    --marker: #f3e33d;    /* highlighter */
+    --wine: #7b1530;
+    --cherry: #d3262e;
+    --pink: #f8c9d5;
+    --pink-soft: #fde6ec;
+    --cream: #fdf7f1;
+    --gridc: #f3d6db;
+    --lav: #c6c7f6;
+    --peri: #4f55d6;      /* Locked in pen */
+    --butter: #ffe28a;    /* highlighter */
+    --peach: #f8a66f;
   }
   * { box-sizing: border-box; }
-  html { background: var(--paper); }
-  body { margin: 0; color: var(--ink); font-family: Archivo, system-ui, sans-serif; font-size: 17px; line-height: 1.5;
-         font-variation-settings: "wdth" 100; }
-  .wrap { max-width: 1400px; margin: 0 auto; padding: 32px 40px 56px; }
+  html { background: var(--cream); }
+  body { margin: 0; color: var(--wine); font-family: Archivo, system-ui, sans-serif; font-size: 17px; line-height: 1.55; }
+  h1, h2, .serif { font-family: Fraunces, Georgia, serif; font-variation-settings: "SOFT" 100, "WONK" 0; font-weight: 400; letter-spacing: -0.015em; }
+  .label { font-size: 12.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+  .scribble { font-family: Caveat, cursive; font-weight: 700; }
+  button, .btn { font: 700 13px/1 Archivo, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; padding: 13px 22px;
+                 border-radius: 6px; border: 0; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-lav { background: var(--lav); color: var(--wine); }
+  .btn-wine { background: var(--wine); color: var(--cream); }
+  .btn-red { background: var(--cherry); color: #fff; }
+  button:hover, .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  :focus-visible { outline: 3px solid var(--peri); outline-offset: 3px; }
 
-  header { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
-  .mark { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; font-stretch: 125%; letter-spacing: -0.02em; }
-  .mark svg { width: 44px; height: 22px; }
-  .actions { display: flex; gap: 10px; }
-  button, .btn { font: inherit; font-weight: 700; font-size: 17px; padding: 12px 22px; border-radius: 4px; cursor: pointer;
-                 border: 2px solid var(--ink); text-decoration: none; display: inline-block; }
-  .primary { background: var(--ink); color: var(--paper); }
-  .ghost { background: transparent; color: var(--ink); }
-  button:hover, .btn:hover { transform: translateY(-1px); }
-  button:focus-visible, .btn:focus-visible, .row:focus-visible, canvas:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+  /* nav: pink bar with a scalloped hem */
+  nav { position: relative; background: var(--pink); z-index: 2; }
+  nav .in { max-width: 1320px; margin: 0 auto; padding: 16px 40px 10px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  nav .links { display: flex; gap: 26px; }
+  nav .links:last-child { justify-content: flex-end; }
+  nav a { color: var(--wine); text-decoration: none; }
+  nav .label:hover { text-decoration: underline; }
+  .wordmark { font-family: Fraunces, Georgia, serif; font-weight: 900; font-variation-settings: "SOFT" 100, "WONK" 1; font-size: 34px; letter-spacing: -0.03em; line-height: 1; }
+  nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 13px;
+               background: radial-gradient(circle at 13px 0, var(--pink) 12.5px, transparent 13px) repeat-x; background-size: 26px 13px; }
 
-  .title { margin: 36px 0 28px; }
-  h1 { margin: 0; font-weight: 900; font-stretch: 125%; font-size: clamp(48px, 6.4vw, 104px); line-height: 0.92; letter-spacing: -0.035em; }
-  .lede { margin: 14px 0 0; font-size: 20px; color: var(--ink-soft); max-width: 60ch; }
+  /* hero on grid paper */
+  .paper { background-color: var(--cream);
+           background-image: linear-gradient(var(--gridc) 1px, transparent 1px), linear-gradient(90deg, var(--gridc) 1px, transparent 1px);
+           background-size: 24px 24px; }
+  .hero { position: relative; overflow: hidden; }
+  .hero .in { max-width: 1320px; margin: 0 auto; padding: 84px 40px 96px; display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
+  .hero h1 { margin: 14px 0 18px; font-size: clamp(46px, 5.4vw, 84px); line-height: 1.02; }
+  .hero p { margin: 0 0 26px; max-width: 34ch; font-size: 17px; }
+  .arrow { position: absolute; width: 150px; left: 31%; top: 62%; }
+  @media (max-width: 960px) { .hero .in { grid-template-columns: 1fr; } .arrow { display: none; } }
 
-  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start; }
-  @media (max-width: 980px) { .stage { grid-template-columns: 1fr; } }
+  .polaroid { position: relative; background: #fff; padding: 14px 14px 52px; transform: rotate(1.6deg);
+              box-shadow: 0 2px 0 rgba(123,21,48,.08), 0 18px 40px -18px rgba(123,21,48,.45); }
+  .polaroid .screen { aspect-ratio: 16/9; background: #2a0a14; position: relative; }
+  .polaroid video { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .polaroid .cap { position: absolute; left: 18px; bottom: 12px; font-size: 26px; }
+  .tape { position: absolute; width: 110px; height: 30px; background: rgba(211,38,46,.78); }
+  .tape.a { top: -14px; left: 28px; transform: rotate(-8deg); }
+  .tape.b { bottom: 26px; right: -30px; transform: rotate(-24deg); }
+  .sticker { position: absolute; display: grid; place-items: center; text-align: center; line-height: 1; }
+  .sticker.badge { top: -46px; right: -18px; width: 124px; height: 124px; transform: rotate(10deg); z-index: 3; }
+  .sticker.badge svg { position: absolute; inset: 0; }
+  .sticker.badge span { position: relative; font-size: 30px; color: var(--wine); padding: 0 12px; }
+  .empty { height: 100%; display: grid; place-items: center; color: var(--pink); text-align: center; padding: 24px; }
+  .doodle { position: absolute; pointer-events: none; }
 
-  .screen { position: relative; aspect-ratio: 16 / 9; background: #0d1220; border: 2px solid var(--ink); }
-  .screen video { width: 100%; height: 100%; display: block; object-fit: contain; }
-  .empty { height: 100%; display: grid; place-items: center; color: #c9d1e0; text-align: center; padding: 24px; }
-  .note { position: absolute; top: -18px; left: 18px; font-family: Caveat, cursive; font-weight: 700; font-size: 34px; line-height: 1;
-          padding: 2px 12px 4px; transform: rotate(-3deg); background: var(--marker); color: var(--ink); }
-
-  .replay { margin-top: 18px; border: 2px solid var(--ink); background: var(--paper); }
-  .replay-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 16px 0; flex-wrap: wrap; }
-  .replay-head h2 { margin: 0; font-size: 18px; font-weight: 800; font-stretch: 112%; }
-  .replay-head p { margin: 0; color: var(--ink-soft); font-size: 15px; }
-  .replay-head b { color: var(--ink); font-stretch: 75%; font-size: 22px; }
-  .strip { position: relative; height: 170px; }
-  .tall { height: 270px; }
+  /* red band with the ticket card */
+  .band { background: var(--cherry); padding: 64px 40px 72px; }
+  .ticket { position: relative; max-width: 1240px; margin: 0 auto; background: var(--cream); padding: 64px 48px 44px; }
+  .ticket::before { content: ""; position: absolute; left: 0; right: 0; top: -15px; height: 30px;
+                    background: radial-gradient(circle, var(--cherry) 14px, transparent 14.5px) repeat-x; background-size: 40px 30px; background-position: 6px 0; }
+  .ticket .head { text-align: center; margin-bottom: 30px; }
+  .ticket h2 { margin: 6px 0 0; font-size: clamp(34px, 3.6vw, 52px); line-height: 1.05; }
+  .cal { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1.5px solid var(--wine); }
+  .cell { position: relative; border-left: 1.5px solid var(--wine); padding: 10px 12px 18px; cursor: pointer; text-align: center; background: var(--cream); min-height: 190px; }
+  .cell:first-child { border-left: 0; }
+  .cell:hover { background: var(--pink-soft); }
+  .cell .top { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-align: left; }
+  .cell .icon { width: 46px; height: 46px; margin: 14px auto 8px; display: block; }
+  .cell .name { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-size: 18px; }
+  .cell .name.Hype { color: var(--cherry); }
+  .cell .name.Locked { color: var(--peri); }
+  .cell .when { font-size: 14px; margin-top: 4px; }
+  .cell .ring { position: absolute; inset: 22px 6px 6px; pointer-events: none; display: none; }
+  .cell.on .ring { display: block; }
+  .cell.on { background: var(--pink-soft); }
+  .ticket .cta { text-align: center; margin-top: 26px; }
+  .replay { max-width: 1240px; margin: 26px auto 0; background: var(--pink); border-radius: 18px; padding: 16px 22px 18px; }
+  .replay .row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .replay .row p { margin: 0; font-size: 15px; }
+  .replay .row b { font-family: Fraunces, Georgia, serif; font-size: 24px; }
+  .strip { position: relative; height: 170px; background: var(--cream); border-radius: 10px; overflow: hidden; }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
-  .log h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; font-stretch: 112%; }
-  .log p.hint { margin: 0 0 12px; color: var(--ink-soft); font-size: 15px; }
-  .rows { border-top: 2px solid var(--ink); }
-  .row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 12px 8px 12px 4px;
-         border-bottom: 1px solid var(--grid-major); cursor: pointer; position: relative; }
-  .row:hover { background: var(--paper-deep); }
-  .row.on { background: linear-gradient(transparent 12%, rgba(243,227,61,.75) 12%, rgba(243,227,61,.75) 88%, transparent 88%); }
-  .row .n { font-weight: 900; font-stretch: 62%; font-size: 40px; line-height: 1; text-align: center; }
-  .row .k { font-weight: 800; font-size: 19px; }
-  .row .k.Hype { color: var(--red); }
-  .row .k.Locked { color: var(--blue); }
-  .row .when { color: var(--ink-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
-  .row svg { width: 70px; height: 18px; }
+  /* split: stats on cream, the whole session on stripes */
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
+  .split .left { padding: 80px 56px; display: flex; flex-direction: column; justify-content: center; }
+  .split h2 { margin: 12px 0 14px; font-size: clamp(40px, 4.2vw, 64px); line-height: 1.02; }
+  .split p { margin: 0 0 30px; max-width: 42ch; }
+  .badges { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 30px; }
+  .bdg { position: relative; width: 116px; height: 116px; display: grid; place-items: center; text-align: center; }
+  .bdg svg { position: absolute; inset: 0; }
+  .bdg .v { position: relative; font-family: Fraunces, Georgia, serif; font-size: 36px; line-height: 1; }
+  .bdg .k { position: relative; display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
+  .split .right { position: relative; padding: 70px 48px; background: repeating-linear-gradient(90deg, var(--pink) 0 16px, #fff4f7 16px 32px);
+                  display: grid; place-items: center; min-height: 520px; }
+  .frame { position: relative; width: 100%; background: var(--cream); border: 10px solid #fff; transform: rotate(-1.4deg);
+           box-shadow: 0 18px 40px -18px rgba(123,21,48,.45); }
+  .frame .sheet { position: relative; height: 300px; }
+  .frame .sheet canvas { cursor: pointer; }
+  .frame .tape.a { top: -18px; left: -26px; transform: rotate(-28deg); }
+  .frame .tape.b { bottom: -16px; right: -20px; top: auto; transform: rotate(-20deg); }
+  .key { display: flex; gap: 18px; justify-content: center; margin-top: 16px; font-size: 13px; flex-wrap: wrap; }
+  .key i { display: inline-block; width: 22px; height: 4px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  .key i.hl { height: 12px; background: var(--butter); }
+  .tag { position: absolute; bottom: -34px; right: 30px; background: #fff; border: 1.5px solid var(--wine); padding: 6px 16px 8px;
+         font-size: 22px; transform: rotate(6deg); border-radius: 4px; }
 
-  .printout { margin-top: 40px; }
-  .printout-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
-  .printout h2 { margin: 0; font-size: 26px; font-weight: 900; font-stretch: 125%; letter-spacing: -0.02em; }
-  .key { display: flex; gap: 22px; color: var(--ink-soft); font-size: 15px; flex-wrap: wrap; }
-  .key i { display: inline-block; width: 26px; height: 3px; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
-  .key .hl { width: 26px; height: 12px; background: var(--marker); border-radius: 0; }
-  .sheet { border: 2px solid var(--ink); }
-  .sheet canvas { cursor: pointer; }
-  footer { margin-top: 14px; color: var(--ink-soft); font-size: 14px; max-width: 80ch; }
+  .checker { height: 26px; background: conic-gradient(var(--wine) 25%, var(--pink) 0 50%, var(--wine) 0 75%, var(--pink) 0) 0 0 / 26px 26px; }
+  .checker.thin { height: 13px; background-size: 26px 26px; }
 
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  /* lavender footer with a scalloped card */
+  .lav { background: var(--lav); padding: 80px 40px 90px; }
+  .cloud { position: relative; max-width: 980px; margin: 0 auto; background: var(--cream); padding: 64px 56px 52px; text-align: center; border-radius: 28px; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; left: 20px; right: 20px; height: 26px;
+                                  background: radial-gradient(circle at 18px 26px, var(--cream) 18px, transparent 18.5px) repeat-x; background-size: 36px 26px; }
+  .cloud::before { top: -20px; }
+  .cloud::after { bottom: -20px; transform: scaleY(-1); }
+  .pill { display: inline-block; background: var(--pink); padding: 5px 12px; border-radius: 4px; }
+  .cloud h2 { margin: 18px 0 30px; font-size: clamp(38px, 4vw, 60px); line-height: 1.04; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; text-align: left; margin: 0 0 34px; padding: 0; list-style: none; counter-reset: s; }
+  @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+  .steps li { counter-increment: s; }
+  .steps li::before { content: counter(s); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+                      background: var(--cherry); color: #fff; font-family: Fraunces, Georgia, serif; font-size: 22px; margin-bottom: 10px; }
+  .steps b { display: block; font-size: 18px; margin-bottom: 4px; }
+  .credit { font-size: 14px; margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="mark">
-      <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
-      brainclip
-    </div>
-    <div class="actions" id="actions"></div>
-  </header>
 
-  <section class="title">
-    <h1 id="title">Your reel</h1>
-    <p class="lede" id="lede"></p>
-  </section>
+<nav>
+  <div class="in">
+    <div class="links"><a class="label" href="#moments">This session's moments</a><a class="label" href="#session">Whole session</a></div>
+    <div class="wordmark">brainclip</div>
+    <div class="links" id="navright"><a class="label" href="#how">How it works</a></div>
+  </div>
+</nav>
 
-  <section class="stage">
+<header class="hero paper">
+  <svg class="doodle" style="left:2.5%;top:9%;width:34px" viewBox="0 0 40 60" aria-hidden="true"><path d="M24 2 6 34h14l-6 24 22-36H22z" fill="#ffe28a" stroke="#7b1530" stroke-width="2.5" stroke-linejoin="round"/></svg>
+  <svg class="doodle" style="left:40%;top:7%;width:46px" viewBox="0 0 60 50" aria-hidden="true"><path d="M30 46C10 46 4 34 6 24 8 12 18 6 26 9c4-6 16-6 20 2 9 0 12 10 8 17 4 8-4 17-12 15-3 4-8 3-12 3z" fill="#f8c9d5" stroke="#7b1530" stroke-width="2.5"/><path d="M22 18c3 4 0 8 4 11m8-15c-2 5 2 8-1 12" fill="none" stroke="#7b1530" stroke-width="2" stroke-linecap="round"/></svg>
+  <svg class="doodle" style="left:3%;bottom:14%;width:28px" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2l3.4 8.6L27 12l-6.6 5.8L22.4 27 15 22.2 7.6 27l2-9.2L3 12l8.6-1.4z" fill="#c6c7f6" stroke="#7b1530" stroke-width="2" stroke-linejoin="round"/></svg>
+  <div class="in">
     <div>
+      <div class="label" id="eyebrow"></div>
+      <h1 id="title">Your brain picked the moments</h1>
+      <p id="lede"></p>
+      <div id="heroBtns"></div>
+    </div>
+    <div class="polaroid">
+      <span class="tape a"></span><span class="tape b"></span>
+      <div class="sticker badge" id="badge" hidden>
+        <svg viewBox="0 0 120 120"><path id="badgePath" fill="#f8a66f" stroke="#7b1530" stroke-width="2.5"/></svg>
+        <span class="scribble" id="badgeText"></span>
+      </div>
       <div class="screen" id="screen"></div>
-      <div class="replay" id="replay" hidden>
-        <div class="replay-head">
-          <h2>What your brain did during this clip</h2>
-          <p id="replay-stat"></p>
-        </div>
-        <div class="strip"><canvas id="zoom" aria-label="Brain activity during the playing clip"></canvas></div>
-      </div>
+      <div class="cap scribble" id="cap">clipped by brain activity, not buttons</div>
     </div>
-    <aside class="log">
-      <h2>Moments your brain flagged</h2>
-      <p class="hint">In the order they happened. Pick one to watch it.</p>
-      <div class="rows" id="rows"></div>
-    </aside>
-  </section>
+  </div>
+  <svg class="arrow" viewBox="0 0 160 70" aria-hidden="true"><path d="M4 30c18-26 46-26 40 0-4 18-30 10-16-6 18-20 60-4 110 10" fill="none" stroke="#7b1530" stroke-width="2.5" stroke-linecap="round"/><path d="M128 22l12 12-16 6" fill="none" stroke="#7b1530" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</header>
 
-  <section class="printout">
-    <div class="printout-head">
-      <h2>The whole session</h2>
-      <div class="key">
-        <span><i style="background:var(--red)"></i>Excitement</span>
-        <span><i style="background:var(--blue)"></i>Focus</span>
-        <span><i class="hl"></i>Clipped</span>
-      </div>
+<section class="band" id="moments">
+  <div class="ticket">
+    <div class="head">
+      <div class="label">Moments your brain flagged</div>
+      <h2>This session</h2>
     </div>
-    <div class="sheet"><div class="strip tall"><canvas id="sheet" tabindex="0" aria-label="Brain activity for the whole session. Click a highlighted part to watch that clip."></canvas></div></div>
-    <footer>Each line shows how far your brain activity moved from your own previous minute. Brainclip clips the moments that stand out for you, not for some average player.</footer>
-  </section>
-</div>
+    <div class="cal" id="cal"></div>
+    <div class="cta"><button class="btn-wine" id="reel2">Play them all</button></div>
+  </div>
+  <div class="replay" id="replay" hidden>
+    <div class="row"><span class="label">What your brain did during this clip</span><p id="replayStat"></p></div>
+    <div class="strip"><canvas id="zoom" aria-label="Brain activity during the clip that is playing"></canvas></div>
+  </div>
+</section>
+
+<section class="split" id="session">
+  <div class="left paper">
+    <div class="label" id="sessLabel">The whole session</div>
+    <h2>Your brain, start to finish.</h2>
+    <p>Each line shows how far your brain moved from your own previous minute. The yellow marks are the parts Brainclip clipped. Click one to watch it.</p>
+    <div class="badges" id="badges"></div>
+  </div>
+  <div class="right">
+    <div class="frame">
+      <span class="tape a"></span><span class="tape b"></span>
+      <div class="sheet"><canvas id="sheet" tabindex="0" aria-label="Brain activity for the whole session. Click a highlighted part to watch that clip."></canvas></div>
+      <div class="tag scribble">read by an EEG headset</div>
+    </div>
+    <div class="key">
+      <span><i style="background:var(--cherry)"></i>Excitement</span>
+      <span><i style="background:var(--peri)"></i>Focus</span>
+      <span><i class="hl"></i>Clipped</span>
+    </div>
+  </div>
+</section>
+
+<div class="checker"></div>
+
+<section class="lav" id="how">
+  <div class="cloud">
+    <span class="pill label">How Brainclip works</span>
+    <h2>No clip button.<br>Just your brain.</h2>
+    <ol class="steps">
+      <li><b>Wear the headset and play</b>The first minute is a warm-up, so Brainclip learns what normal looks like for you.</li>
+      <li><b>Your brain spikes</b>When excitement or focus jumps well above your last minute, that moment gets flagged.</li>
+      <li><b>Get your reel</b>Brainclip cuts those moments from the recording and shows you what your brain did in each one.</li>
+    </ol>
+    <p class="credit">Made by Sarrat, Prachi, Dhruvi and Tuline at the BCI Build Sprint, USF.</p>
+  </div>
+</section>
 
 <script src="data.js"></script>
 <script>
@@ -139,25 +239,41 @@ const D = window.BRAINCLIP;
 const moments = D.moments || [];
 const R = D.readings || [];             // [time, excitement z, focus z]
 const hasClips = moments.some(m => m.file);
-const C = { paper: '#edf1ea', grid: '#cddccf', gridMajor: '#aac6b0', ink: '#16233b', soft: '#55627a',
-            red: '#d7262e', blue: '#1f4fd1', marker: 'rgba(243,227,61,0.78)' };
+const C = { cream: '#fdf7f1', grid: '#f3d6db', gridMajor: '#ebbcc5', wine: '#7b1530', cherry: '#d3262e',
+            peri: '#4f55d6', butter: 'rgba(255,226,138,0.85)', lav: '#c6c7f6' };
 let current = null, reelMode = false, video = null;
 
 const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const kind = m => m.label === 'Hype' ? 'Hype' : 'Locked';
-const pen = m => m.label === 'Hype' ? C.red : C.blue;
+const pen = m => m.label === 'Hype' ? C.cherry : C.peri;
 const minutes = Math.max(1, Math.round(D.duration / 60));
+const hype = moments.filter(m => m.label === 'Hype').length;
 
-document.title = `${D.player}'s reel · Brainclip`;
-document.getElementById('title').textContent = `${D.player}'s reel`;
-document.getElementById('lede').textContent =
-  `${D.game ? D.game + ', ' : ''}${minutes} minute${minutes > 1 ? 's' : ''} of play. ` +
-  (moments.length ? `Your brain flagged ${moments.length} moment${moments.length > 1 ? 's' : ''}, and Brainclip cut them into this reel.`
-                  : `Nothing stood out enough to clip this time.`);
+// scalloped circle path, for stickers and stat badges
+function scallop(cx, cy, r, bumps, depth) {
+  let d = '';
+  for (let i = 0; i <= bumps * 8; i++) {
+    const a = (i / (bumps * 8)) * Math.PI * 2;
+    const rr = r + depth * Math.abs(Math.cos(a * bumps / 2)) ** 0.7;
+    const x = cx + rr * Math.cos(a), y = cy + rr * Math.sin(a);
+    d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  return d + 'Z';
+}
+
+document.title = `${D.player}'s reel, Brainclip`;
+document.getElementById('eyebrow').textContent = `(${D.game ? D.game + ', ' : ''}${minutes} minute session)`;
+document.getElementById('title').textContent = moments.length
+  ? `${D.player}'s brain picked ${moments.length} moment${moments.length > 1 ? 's' : ''}`
+  : `${D.player}'s session`;
+document.getElementById('lede').textContent = moments.length
+  ? 'Nobody pressed a clip button. Brainclip watched the headset and cut the moments where your brain reacted.'
+  : 'Nothing stood out enough to clip this time. Play a little longer and try again.';
+document.getElementById('sessLabel').textContent = `(The whole session, ${fmt(D.duration)})`;
 
 const screen = document.getElementById('screen');
 if (hasClips) {
-  screen.innerHTML = '<video id="v" playsinline controls></video><div class="note" id="note" hidden></div>';
+  screen.innerHTML = '<video id="v" playsinline controls></video>';
   video = document.getElementById('v');
   video.addEventListener('ended', () => {
     if (!reelMode) return;
@@ -167,46 +283,64 @@ if (hasClips) {
   const tick = () => { drawZoom(); drawSheet(); };
   video.addEventListener('timeupdate', tick);
   video.addEventListener('seeked', tick);
-  document.getElementById('actions').innerHTML =
-    `<button class="primary" id="reel">Play the reel</button>` +
-    (D.has_reel ? `<a class="btn ghost" href="reel.mp4" download>Download reel</a>` : '');
-  document.getElementById('reel').onclick = () => play(moments[0], true);
+  document.getElementById('heroBtns').innerHTML = `<button class="btn-lav" id="reel">Play the reel</button>`;
+  document.getElementById('navright').innerHTML += D.has_reel ? `<a class="label" href="reel.mp4" download>Download reel</a>` : '';
+  const all = () => { play(moments[0], true); document.querySelector('.polaroid').scrollIntoView({behavior: 'smooth', block: 'center'}); };
+  document.getElementById('reel').onclick = all;
+  document.getElementById('reel2').onclick = all;
 } else {
+  document.getElementById('reel2').hidden = true;
   screen.innerHTML = `<div class="empty">${moments.length
     ? 'Moments were found, but this session has no recording to cut them from.'
-    : 'No moments stood out this session. Play a little longer, or lower the threshold with report.py.'}</div>`;
+    : 'No moments to show yet.'}</div>`;
 }
 
-const maxZ = Math.max(1, ...moments.map(m => m.peak_z));
-const strength = m => {
-  const w = Math.max(6, Math.round(Math.min(1, m.peak_z / maxZ) * 66));
-  return `<svg viewBox="0 0 70 18" aria-label="strength"><path d="M2 12 L${w} ${12 - Math.min(8, w / 8)}" stroke="${pen(m)}" stroke-width="5" stroke-linecap="round"/></svg>`;
-};
-document.getElementById('rows').innerHTML = moments.map((m, i) => `
-  <div class="row" data-i="${i}" tabindex="0" role="button" aria-label="Watch moment ${m.id}, ${m.label}">
-    <div class="n">${m.id}</div>
-    <div><div class="k ${kind(m)}">${m.label}</div><div class="when">${fmt(m.clip_start)} to ${fmt(m.clip_end)}</div></div>
-    ${strength(m)}
+// moment cells, like a weekly schedule
+const icon = m => m.label === 'Hype'
+  ? `<svg class="icon" viewBox="0 0 46 46" aria-hidden="true"><path d="M27 3 9 26h12l-4 17 20-25H25z" fill="#ffe28a" stroke="#7b1530" stroke-width="2.4" stroke-linejoin="round"/></svg>`
+  : `<svg class="icon" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="19" fill="#c6c7f6" stroke="#7b1530" stroke-width="2.4"/><circle cx="23" cy="23" r="11" fill="#fdf7f1" stroke="#7b1530" stroke-width="2.4"/><circle cx="23" cy="23" r="4" fill="#d3262e"/></svg>`;
+const ring = `<svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M50 4C80 3 97 22 96 50 95 80 76 97 48 96 18 95 3 76 4 48 5 22 24 6 56 5" fill="none" stroke="#8f93f0" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>`;
+document.getElementById('cal').innerHTML = moments.map((m, i) => `
+  <div class="cell" data-i="${i}" tabindex="0" role="button" aria-label="Watch moment ${m.id}, ${m.label} at ${fmt(m.clip_start)}">
+    <div class="top"><span>#${m.id}</span><span>${fmt(m.start)}</span></div>
+    ${icon(m)}
+    <div class="name ${kind(m)}">${m.label}</div>
+    <div class="when">${fmt(m.clip_start)} to ${fmt(m.clip_end)}</div>
+    ${ring}
   </div>`).join('');
-document.querySelectorAll('.row').forEach(el => {
+document.querySelectorAll('.cell').forEach(el => {
   el.onclick = () => play(moments[+el.dataset.i], false);
   el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
 });
 
+// scalloped stat badges
+const badgeData = [
+  [moments.length, 'moments', '#f8a66f', C.wine],
+  [hype, 'hype', C.wine, '#fdf7f1'],
+  [moments.length - hype, 'locked in', '#f8c9d5', C.wine],
+  [fmt(D.duration), 'played', '#c6c7f6', C.wine],
+];
+document.getElementById('badges').innerHTML = badgeData.map(([v, k, fill, ink]) => `
+  <div class="bdg" style="color:${ink}">
+    <svg viewBox="0 0 116 116" aria-hidden="true"><path d="${scallop(58, 58, 50, 9, 6)}" fill="${fill}"/></svg>
+    <div><span class="v">${v}</span><span class="k">${k}</span></div>
+  </div>`).join('');
+document.getElementById('badgePath').setAttribute('d', scallop(60, 60, 50, 10, 7));
+
 function play(m, reel) {
+  if (!m) return;
   current = m; reelMode = reel;
-  document.querySelectorAll('.row').forEach(el => el.classList.toggle('on', moments[+el.dataset.i] === m));
+  document.querySelectorAll('.cell').forEach(el => el.classList.toggle('on', moments[+el.dataset.i] === m));
   document.getElementById('replay').hidden = false;
   const peak = m.peak_z > 9.9 ? '10+' : m.peak_z.toFixed(1);
-  document.getElementById('replay-stat').innerHTML =
-    `${m.label === 'Hype' ? 'Excitement' : 'Focus'} peaked at <b style="color:${pen(m)}">+${peak}</b> above your last minute`;
+  document.getElementById('replayStat').innerHTML =
+    `#${m.id}: ${m.label === 'Hype' ? 'excitement' : 'focus'} peaked at <b style="color:${pen(m)}">+${peak}</b> above your last minute`;
+  const badge = document.getElementById('badge');
+  badge.hidden = false;
+  document.getElementById('badgeText').textContent = m.label === 'Hype' ? `#${m.id} hype!` : `#${m.id} locked in`;
   if (video && m.file) {
     video.src = m.file;
     if (reel || play.started) video.play().catch(() => {});
-    const note = document.getElementById('note');
-    note.hidden = false;
-    note.textContent = m.label === 'Hype' ? `#${m.id} hype!` : `#${m.id} locked in`;
-    note.style.color = pen(m);
   }
   play.started = true;
   drawZoom(); drawSheet();
@@ -219,39 +353,25 @@ function setup(canvas) {
   canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = C.cream; ctx.fillRect(0, 0, w, h);
+  for (let x = 0, i = 0; x <= w; x += 12, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, h); ctx.stroke(); }
+  for (let y = 0, i = 0; y <= h; y += 12, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5); ctx.stroke(); }
   return [ctx, w, h];
 }
-function paper(ctx, w, h, cell = 12) {
-  for (let x = 0, i = 0; x <= w; x += cell, i++) {
-    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); ctx.stroke();
-  }
-  for (let y = 0, i = 0; y <= h; y += cell, i++) {
-    ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); ctx.stroke();
-  }
-}
-// a highlighter swipe: slightly uneven edges, ink-like ends
 function highlight(ctx, x0, x1, y0, y1, seed) {
-  const r = n => (Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1;
-  ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = C.marker;
+  const r = n => Math.abs((Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453) % 1);
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = C.butter;
   ctx.beginPath();
   ctx.moveTo(x0 + 3, y0 + r(1) * 4);
   ctx.lineTo(x1 - 2, y0 + r(2) * 5);
   ctx.quadraticCurveTo(x1 + 4, (y0 + y1) / 2, x1 - 1, y1 - r(3) * 4);
   ctx.lineTo(x0 + 1, y1 - r(4) * 5);
   ctx.quadraticCurveTo(x0 - 4, (y0 + y1) / 2, x0 + 3, y0 + r(1) * 4);
-  ctx.fill();
-  ctx.restore();
+  ctx.fill(); ctx.restore();
 }
 function trace(ctx, pts, X, Y, col, color, width, alpha = 1) {
-  ctx.save();
-  ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.beginPath();
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
   pts.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col])));
   ctx.stroke(); ctx.restore();
 }
@@ -260,7 +380,6 @@ const nowT = () => current && video ? current.clip_start + video.currentTime : n
 function drawZoom() {
   if (!current) return;
   const [ctx, w, h] = setup(document.getElementById('zoom'));
-  paper(ctx, w, h, 12);
   const t0 = current.clip_start, t1 = current.clip_end;
   const pts = R.filter(r => r[0] >= t0 - 1 && r[0] <= t1 + 1);
   if (pts.length < 2) return;
@@ -271,19 +390,17 @@ function drawZoom() {
   highlight(ctx, X(current.start), X(current.end), 8, h - 8, current.id);
   const tNow = nowT();
   const main = current.label === 'Hype' ? 1 : 2, other = main === 1 ? 2 : 1;
-  const color = c => c === 1 ? C.red : C.blue;
-  trace(ctx, pts, X, Y, other, color(other), 2, 0.35);
-  if (tNow == null) { trace(ctx, pts, X, Y, main, color(main), 3.2); return; }
-  // the pen has drawn up to "now"; the rest is still faint
-  trace(ctx, pts, X, Y, main, color(main), 3.2, 0.18);
+  const color = c => c === 1 ? C.cherry : C.peri;
+  trace(ctx, pts, X, Y, other, color(other), 2, 0.3);
+  if (tNow == null) { trace(ctx, pts, X, Y, main, color(main), 3.4); return; }
+  trace(ctx, pts, X, Y, main, color(main), 3.4, 0.18);
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, X(tNow), h); ctx.clip();
-  trace(ctx, pts, X, Y, main, color(main), 3.2); ctx.restore();
-  // pen tip
+  trace(ctx, pts, X, Y, main, color(main), 3.4); ctx.restore();
   let tip = pts[0];
   for (const r of pts) if (r[0] <= tNow) tip = r;
   ctx.fillStyle = color(main);
-  ctx.beginPath(); ctx.arc(X(tNow), Y(tip[main]), 6, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.arc(X(tNow), Y(tip[main]), 6.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = C.wine; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
   ctx.beginPath(); ctx.moveTo(X(tNow), 0); ctx.lineTo(X(tNow), h); ctx.stroke(); ctx.setLineDash([]);
 }
 
@@ -291,52 +408,43 @@ let geo = null;
 function drawSheet() {
   const canvas = document.getElementById('sheet');
   const [ctx, w, h] = setup(canvas);
-  paper(ctx, w, h, 12);
   if (!R.length) return;
   const t0 = R[0][0], t1 = R[R.length - 1][0];
-  const padX = 14, padTop = 46, padBot = 26;
+  const padX = 12, padTop = 44, padBot = 24;
   const X = t => padX + (t - t0) / Math.max(1, t1 - t0) * (w - 2 * padX);
   const vmax = 9, vmin = -4;
   const Y = v => padTop + (vmax - Math.max(vmin, Math.min(vmax, v))) / (vmax - vmin) * (h - padTop - padBot);
   geo = {t0, t1, padX, w};
 
-  // warm-up: pencil hatching + note
-  ctx.save(); ctx.strokeStyle = 'rgba(85,98,122,.22)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.rect(X(t0), padTop - 10, X(D.baseline_s) - X(t0), h - padTop - padBot + 10); ctx.clip();
-  for (let x = X(t0) - h; x < X(D.baseline_s); x += 9) { ctx.moveTo(x, h); ctx.lineTo(x + h, 0); }
+  ctx.save(); ctx.strokeStyle = 'rgba(123,21,48,.16)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(X(t0), padTop - 8, X(D.baseline_s) - X(t0), h - padTop - padBot + 8); ctx.clip();
+  for (let x = X(t0) - h; x < X(D.baseline_s); x += 8) { ctx.moveTo(x, h); ctx.lineTo(x + h, 0); }
   ctx.stroke(); ctx.restore();
-  ctx.fillStyle = C.soft; ctx.font = '600 24px Caveat, cursive';
-  ctx.fillText('warm-up, never clipped', X(t0) + 8, padTop - 16);
+  ctx.fillStyle = C.wine; ctx.globalAlpha = .7; ctx.font = '700 21px Caveat, cursive';
+  ctx.fillText('warm-up', X(t0) + 6, padTop - 14); ctx.globalAlpha = 1;
 
   for (const m of moments) highlight(ctx, X(m.clip_start), X(m.clip_end), padTop - 6, h - padBot + 4, m.id);
+  trace(ctx, R, X, Y, 2, C.peri, 1.7);
+  trace(ctx, R, X, Y, 1, C.cherry, 1.7);
 
-  trace(ctx, R, X, Y, 2, C.blue, 1.8);
-  trace(ctx, R, X, Y, 1, C.red, 1.8);
-
-  // handwritten notes over each clip
-  ctx.font = '700 26px Caveat, cursive';
+  ctx.font = '700 22px Caveat, cursive';
   for (const m of moments) {
-    ctx.save();
-    ctx.translate(X(m.clip_start) + 4, padTop - 14);
-    ctx.rotate(-0.05);
-    ctx.fillStyle = pen(m);
-    ctx.fillText(m.label === 'Hype' ? `#${m.id} hype!` : `#${m.id} locked in`, 0, 0);
-    ctx.restore();
+    ctx.save(); ctx.translate(X(m.clip_start) + 2, padTop - 14); ctx.rotate(-0.06);
+    ctx.fillStyle = pen(m); ctx.fillText('#' + m.id, 0, 0); ctx.restore();
     if (m === current) {
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5;
+      ctx.strokeStyle = C.wine; ctx.lineWidth = 2.5;
       ctx.strokeRect(X(m.clip_start) - 3, padTop - 8, X(m.clip_end) - X(m.clip_start) + 6, h - padTop - padBot + 14);
     }
   }
-  // time ticks
-  ctx.fillStyle = C.soft; ctx.font = '600 13px Archivo, system-ui';
+  ctx.fillStyle = C.wine; ctx.font = '600 12px Archivo, system-ui';
   const step = (t1 - t0) > 600 ? 120 : 60;
   for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
     if (X(t) > w - 30 || t === 0) continue;
-    ctx.fillText(fmt(t), X(t) - 12, h - 8);
+    ctx.fillText(fmt(t), X(t) - 12, h - 7);
   }
   const tNow = nowT();
   if (tNow != null && video.currentTime > 0) {
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+    ctx.strokeStyle = C.wine; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(X(tNow), padTop - 8); ctx.lineTo(X(tNow), h - padBot + 6); ctx.stroke();
   }
 }
@@ -347,7 +455,7 @@ sheet.addEventListener('click', e => {
   const rect = sheet.getBoundingClientRect();
   const t = geo.t0 + (e.clientX - rect.left - geo.padX) / (geo.w - 2 * geo.padX) * (geo.t1 - geo.t0);
   const hit = moments.find(m => t >= m.clip_start && t <= m.clip_end);
-  if (hit) play(hit, false);
+  if (hit) { play(hit, false); document.querySelector('.polaroid').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 });
 sheet.addEventListener('keydown', e => {
   if (!moments.length || !['ArrowRight', 'ArrowLeft'].includes(e.key)) return;

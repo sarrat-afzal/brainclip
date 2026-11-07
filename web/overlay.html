@@ -7,37 +7,38 @@
   Streamer overlay for OBS.
   OBS > Sources > + > Browser
     URL:    http://localhost:8765/overlay.html   (while run_session.py is running)
-    Width:  500   Height: 230
-  Everything outside the little chart-paper card is transparent.
+    Width:  500   Height: 240
+  Everything outside the little ticket card is transparent.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Archivo:wght@600..800&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
-  :root { --paper: #edf1ea; --ink: #16233b; --ink-soft: #55627a; --red: #d7262e; --blue: #1f4fd1; --marker: #f3e33d; }
+  :root { --wine: #7b1530; --cherry: #d3262e; --pink: #f8c9d5; --cream: #fdf7f1; --peri: #4f55d6; --butter: #ffe28a; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
-  body { font-family: Archivo, system-ui, sans-serif; color: var(--ink); padding: 20px 26px 34px; }
-  .card { position: relative; width: 420px; background: var(--paper); border: 3px solid var(--ink);
-          box-shadow: 6px 6px 0 rgba(22,35,59,.85); transform: rotate(-1.2deg); }
-  .top { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 4px; border-bottom: 1px solid #aac6b0; }
-  .mark { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; font-stretch: 125%; }
-  .mark svg { width: 30px; height: 15px; }
-  .vals { display: flex; gap: 14px; font-weight: 900; font-stretch: 62%; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
-  .vals .h { color: var(--red); }
-  .vals .f { color: var(--blue); }
-  .vals .w { font-family: Caveat, cursive; font-stretch: normal; font-weight: 700; color: var(--ink-soft); font-size: 22px; }
-  canvas { display: block; width: 414px; height: 110px; }
-  .note { position: absolute; right: -8px; bottom: -20px; font-family: Caveat, cursive; font-weight: 700; font-size: 30px; line-height: 1;
-          padding: 2px 12px 4px; background: var(--marker); transform: rotate(4deg) scale(.6); opacity: 0;
-          transition: opacity .2s, transform .25s; }
-  .note.show { opacity: 1; transform: rotate(4deg) scale(1); }
+  body { font-family: Archivo, system-ui, sans-serif; color: var(--wine); padding: 30px 30px 34px; }
+  .card { position: relative; width: 420px; background: var(--cream); border: 2.5px solid var(--wine); transform: rotate(-1.4deg);
+          box-shadow: 5px 6px 0 var(--wine); }
+  .card::before { content: ""; position: absolute; left: -2px; right: -2px; top: -11px; height: 22px;
+                  background: radial-gradient(circle, var(--cherry) 10px, transparent 10.5px) repeat-x; background-size: 28px 22px; background-position: 4px 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 16px 12px 4px; background: var(--pink); }
+  .mark { font-family: Fraunces, Georgia, serif; font-weight: 900; font-variation-settings: "SOFT" 100, "WONK" 1; font-size: 22px; line-height: 1; letter-spacing: -0.02em; }
+  .vals { display: flex; gap: 14px; font-family: Fraunces, Georgia, serif; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .vals .h { color: var(--cherry); }
+  .vals .f { color: var(--peri); }
+  .vals .w { font-family: Caveat, cursive; font-weight: 700; font-size: 22px; }
+  canvas { display: block; width: 415px; height: 110px; }
+  .note { position: absolute; right: -12px; bottom: -22px; font-family: Caveat, cursive; font-weight: 700; font-size: 30px; line-height: 1;
+          padding: 3px 14px 6px; background: var(--butter); border: 2px solid var(--wine); transform: rotate(5deg) scale(.5); opacity: 0;
+          transition: opacity .2s, transform .25s cubic-bezier(.3,1.6,.5,1); }
+  .note.show { opacity: 1; transform: rotate(5deg) scale(1); }
   @media (prefers-reduced-motion: reduce) { .note { transition: none; } }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="top">
-    <div class="mark"><svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 13h9l3-9 5 16 4-12 3 5h18" fill="none" stroke="#d7262e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>brainclip</div>
+    <div class="mark">brainclip</div>
     <div class="vals" id="vals"><span class="w">warming up</span></div>
   </div>
   <canvas id="c"></canvas>
@@ -47,7 +48,7 @@
 // Same rules as detect.py and live.html
 const BASELINE_S = 60, WINDOW_S = 45, ROLL_S = 60, GAP_S = 5;
 const KINDS = {Hype: {cut: 2.0, minS: 1.5}, Locked: {cut: 1.5, minS: 6}};
-const C = { paper: '#edf1ea', grid: '#cddccf', gridMajor: '#aac6b0', red: '#d7262e', blue: '#1f4fd1', marker: 'rgba(243,227,61,0.8)' };
+const C = { cream: '#fdf7f1', grid: '#f3d6db', gridMajor: '#ebbcc5', cherry: '#d3262e', peri: '#4f55d6', butter: 'rgba(255,226,138,0.88)' };
 let rows = [];
 const seen = new Set();
 const canvas = document.getElementById('c');
@@ -80,9 +81,9 @@ function runs(zs, {cut, minS}) {
 const signed = z => Math.abs(z) < 0.05 ? '0.0' : (z > 0 ? '+' : '−') + Math.abs(z).toFixed(1);
 
 function draw(zEx, zFo, marks) {
-  const dpr = 2, w = 414, h = 110;
+  const dpr = 2, w = 415, h = 110;
   canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = C.paper; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = C.cream; ctx.fillRect(0, 0, w, h);
   for (let x = 0, i = 0; x <= w; x += 10, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, h); ctx.stroke(); }
   for (let y = 0, i = 0; y <= h; y += 10, i++) { ctx.strokeStyle = i % 5 ? C.grid : C.gridMajor; ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5); ctx.stroke(); }
   if (rows.length < 2) return;
@@ -90,11 +91,11 @@ function draw(zEx, zFo, marks) {
   const first = Math.max(0, rows.findIndex(r => r.t >= tStart));
   const X = t => 6 + (t - tStart) / Math.max(10, tEnd - tStart) * (w - 22);
   const Y = v => 8 + (7 - Math.max(-3, Math.min(7, v))) / 10 * (h - 16);
-  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = C.marker;
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = C.butter;
   for (const m of marks) if (rows[m.end].t >= tStart) ctx.fillRect(X(Math.max(tStart, rows[m.start].t - 2)), 4, X(rows[m.end].t + 1) - X(Math.max(tStart, rows[m.start].t - 2)), h - 8);
   ctx.restore();
-  for (const [zs, color] of [[zFo, C.blue], [zEx, C.red]]) {
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const [zs, color] of [[zFo, C.peri], [zEx, C.cherry]]) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.beginPath();
     for (let i = first; i < rows.length; i++) i === first ? ctx.moveTo(X(rows[i].t), Y(zs[i])) : ctx.lineTo(X(rows[i].t), Y(zs[i]));
     ctx.stroke();
@@ -104,7 +105,7 @@ function draw(zEx, zFo, marks) {
 function note(kind) {
   const n = document.getElementById('note');
   n.textContent = kind === 'Hype' ? 'hype! clipped' : 'locked in, clipped';
-  n.style.color = kind === 'Hype' ? C.red : C.blue;
+  n.style.color = kind === 'Hype' ? C.cherry : C.peri;
   n.classList.add('show');
   clearTimeout(note.t); note.t = setTimeout(() => n.classList.remove('show'), 2200);
 }
