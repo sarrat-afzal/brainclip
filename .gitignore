@@ -1,0 +1,9 @@
+sessions/
+testdata/
+__pycache__/
+*.pyc
+*.mp4
+*.mkv
+*.mov
+.DS_Store
+.env

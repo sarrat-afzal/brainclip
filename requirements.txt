@@ -1,0 +1,5 @@
+numpy
+scipy
+brainflow
+obsws-python
+websocket-client

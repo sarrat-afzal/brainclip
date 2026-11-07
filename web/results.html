@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brainclip reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080c; --panel: #11141c; --panel2: #171b26; --line: #232838;
+    --text: #f2f4f9; --muted: #8a93a6; --hype: #ff4f86; --focus: #3fd3ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--text); font: 16px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: radial-gradient(1200px 600px at 85% -10%, #1a1030 0%, transparent 60%), var(--bg); min-height: 100vh; }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 28px 36px 48px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .brand { font: 700 22px "Space Grotesk", Inter, sans-serif; letter-spacing: -0.03em; color: var(--muted); }
+  .brand span { color: var(--hype); }
+  h1 { margin: 2px 0 0; font: 700 44px/1.1 "Space Grotesk", Inter, sans-serif; letter-spacing: -0.03em; }
+  .sub { color: var(--muted); margin-top: 6px; font-size: 17px; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 15px; color: var(--muted); }
+  .chip b { color: var(--text); font-family: "Space Grotesk", Inter, sans-serif; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; }
+  @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+  .player { background: #000; border-radius: 18px; overflow: hidden; position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--line); }
+  .player video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
+  .tag { position: absolute; top: 16px; left: 16px; padding: 8px 16px; border-radius: 999px; font: 700 18px "Space Grotesk", Inter, sans-serif; color: #07080c; }
+  .tag.Hype { background: var(--hype); box-shadow: 0 0 30px rgba(255,79,134,.5); }
+  .tag.Locked { background: var(--focus); box-shadow: 0 0 30px rgba(63,211,255,.45); }
+  .empty { display: grid; place-items: center; height: 100%; color: var(--muted); padding: 24px; text-align: center; }
+  .replay { margin-top: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 18px 12px; }
+  .replay-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .replay h2 { margin: 0; font: 700 18px "Space Grotesk", Inter, sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+  .replay .stat { color: var(--muted); font-size: 15px; }
+  .replay .stat b { font-family: "Space Grotesk", Inter, sans-serif; font-size: 20px; }
+  .replay-box { position: relative; height: 150px; margin-top: 8px; }
+  .side { display: flex; flex-direction: column; gap: 12px; }
+  .controls { display: flex; gap: 10px; }
+  button, .btn { flex: 1; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 12px;
+                 padding: 12px 16px; font: 700 16px "Space Grotesk", Inter, sans-serif; cursor: pointer; text-decoration: none; text-align: center; }
+  button.primary { background: var(--hype); border-color: var(--hype); color: #07080c; }
+  button:hover, .btn:hover { filter: brightness(1.12); }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; cursor: pointer;
+          display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; transition: border-color .15s, transform .15s; }
+  .card:hover { border-color: #3a4256; transform: translateX(2px); }
+  .card.on { border-color: var(--text); }
+  .num { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font: 700 18px "Space Grotesk", Inter, sans-serif; color: #07080c; }
+  .num.Hype { background: var(--hype); }
+  .num.Locked { background: var(--focus); }
+  .card .t { font: 700 17px "Space Grotesk", Inter, sans-serif; }
+  .card .s { color: var(--muted); font-size: 14px; }
+  .bar { width: 60px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; }
+  .graph { margin-top: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 20px 10px; }
+  .graph h2 { margin: 0 0 4px; font: 700 18px "Space Grotesk", Inter, sans-serif; }
+  .legend { display: flex; gap: 20px; color: var(--muted); font-size: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 20px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .canvas-box { position: relative; height: 230px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #graph { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">brain<span>clip</span></div>
+      <h1 id="title">Your reel</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="player" id="player"></div>
+      <div class="replay" id="replay" hidden>
+        <div class="replay-head">
+          <h2>Neural replay</h2>
+          <div class="stat" id="replay-stat"></div>
+        </div>
+        <div class="replay-box"><canvas id="zoom"></canvas></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="controls" id="controls"></div>
+      <div class="list" id="list"></div>
+    </div>
+  </div>
+
+  <div class="graph">
+    <h2>Your whole session</h2>
+    <div class="legend">
+      <span><i style="background:var(--hype)"></i>Excitement</span>
+      <span><i style="background:var(--focus)"></i>Focus</span>
+      <span>Lines show how unusual each moment was compared to your previous minute. Shaded = clipped. Click to jump.</span>
+    </div>
+    <div class="canvas-box"><canvas id="graph"></canvas></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+const D = window.BRAINCLIP;
+const moments = D.moments || [];
+const R = D.readings || [];          // [time, excitement z, focus z]
+const hasClips = moments.some(m => m.file);
+let current = null, reelMode = false, video = null;
+
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const cls = m => m.label === 'Hype' ? 'Hype' : 'Locked';
+const colorOf = m => m.label === 'Hype' ? '#ff4f86' : '#3fd3ff';
+
+document.getElementById('title').textContent = `${D.player}'s reel`;
+document.getElementById('sub').textContent = (D.game ? D.game + ' · ' : '') + 'clipped by brain activity, not by buttons';
+const hype = moments.filter(m => m.label === 'Hype').length;
+document.getElementById('chips').innerHTML = [
+  `<span class="chip"><b>${moments.length}</b> moments</span>`,
+  `<span class="chip"><b>${hype}</b> hype · <b>${moments.length - hype}</b> locked in</span>`,
+  `<span class="chip"><b>${fmt(D.duration)}</b> played</span>`
+].join('');
+
+const player = document.getElementById('player');
+if (hasClips) {
+  player.innerHTML = '<video id="v" playsinline controls></video><div class="tag" id="tag" hidden></div>';
+  video = document.getElementById('v');
+  video.addEventListener('ended', () => {
+    if (!reelMode) return;
+    const i = moments.indexOf(current);
+    if (i < moments.length - 1) play(moments[i + 1], true); else reelMode = false;
+  });
+  const tick = () => { drawZoom(); drawGraph(); };
+  video.addEventListener('timeupdate', tick);
+  video.addEventListener('seeked', tick);
+  const c = document.getElementById('controls');
+  c.innerHTML = `<button class="primary" id="reel">Play the reel</button>` +
+    (D.has_reel ? `<a class="btn" href="reel.mp4" download>Download</a>` : '');
+  document.getElementById('reel').onclick = () => play(moments[0], true);
+} else {
+  player.innerHTML = `<div class="empty">${moments.length ? 'Moments found, but no video was linked to this session.' : 'No moments crossed the spike line this session. Try a longer session or a lower threshold.'}</div>`;
+}
+
+const maxZ = Math.max(1, ...moments.map(m => m.peak_z));
+document.getElementById('list').innerHTML = moments.map((m, i) => `
+  <div class="card" data-i="${i}">
+    <div class="num ${cls(m)}">${m.id}</div>
+    <div><div class="t">${m.label}</div><div class="s">${fmt(m.clip_start)} to ${fmt(m.clip_end)}</div></div>
+    <div class="bar" title="strength"><i style="width:${Math.round(m.peak_z / maxZ * 100)}%;background:${colorOf(m)}"></i></div>
+  </div>`).join('');
+document.querySelectorAll('.card').forEach(el => el.onclick = () => play(moments[+el.dataset.i], false));
+
+function play(m, reel) {
+  current = m; reelMode = reel;
+  document.querySelectorAll('.card').forEach(el => el.classList.toggle('on', moments[+el.dataset.i] === m));
+  document.getElementById('replay').hidden = false;
+  const peak = m.peak_z > 9.9 ? '10+' : m.peak_z.toFixed(1);
+  document.getElementById('replay-stat').innerHTML =
+    `#${m.id} ${m.label} · peak <b style="color:${colorOf(m)}">+${peak}</b> vs. your last minute`;
+  if (video && m.file) {
+    video.src = m.file;
+    if (reel || play.started) video.play().catch(() => {});
+    const tag = document.getElementById('tag');
+    tag.hidden = false; tag.className = 'tag ' + cls(m);
+    tag.textContent = `#${m.id} ${m.label}`;
+  }
+  play.started = true;
+  drawZoom(); drawGraph();
+}
+
+function setup(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  return [ctx, w, h];
+}
+const nowT = () => current && video ? current.clip_start + video.currentTime : null;
+
+// Zoomed brain graph for the clip that's playing
+function drawZoom() {
+  if (!current) return;
+  const [ctx, w, h] = setup(document.getElementById('zoom'));
+  const t0 = current.clip_start, t1 = current.clip_end;
+  const pts = R.filter(r => r[0] >= t0 - 1 && r[0] <= t1 + 1);
+  if (pts.length < 2) return;
+  const X = t => 8 + (t - t0) / Math.max(1, t1 - t0) * (w - 16);
+  // fit this clip's values, so a big spike still fits in the panel
+  const vals = pts.flatMap(r => [r[1], r[2]]);
+  const vmax = Math.min(14, Math.max(4, ...vals)) * 1.08, vmin = Math.max(-4, Math.min(-1.5, ...vals));
+  const Y = v => 10 + (vmax - Math.max(vmin, Math.min(vmax, v))) / (vmax - vmin) * (h - 20);
+  // the detected moment itself
+  ctx.fillStyle = current.label === 'Hype' ? 'rgba(255,79,134,.12)' : 'rgba(63,211,255,.12)';
+  ctx.fillRect(X(current.start), 0, X(current.end) - X(current.start), h);
+  ctx.strokeStyle = '#232838'; ctx.setLineDash([5, 7]);
+  ctx.beginPath(); ctx.moveTo(8, Y(current.label === 'Hype' ? 2 : 1.5)); ctx.lineTo(w - 8, Y(current.label === 'Hype' ? 2 : 1.5)); ctx.stroke();
+  ctx.setLineDash([]);
+  const tNow = nowT();
+  for (const [col, color] of [[2, '#3fd3ff'], [1, '#ff4f86']]) {
+    const main = (col === 1) === (current.label === 'Hype');
+    ctx.globalAlpha = main ? 1 : 0.35;
+    ctx.strokeStyle = color; ctx.lineWidth = main ? 3.5 : 2; ctx.lineJoin = 'round';
+    ctx.shadowColor = color; ctx.shadowBlur = main ? 12 : 0;
+    // solid up to the playhead, faint after it
+    ctx.beginPath();
+    pts.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col])));
+    ctx.save();
+    if (tNow != null) { ctx.beginPath(); ctx.rect(0, 0, X(tNow), h); ctx.clip(); ctx.beginPath(); pts.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col]))); }
+    ctx.stroke();
+    ctx.restore();
+    if (tNow != null) {
+      ctx.globalAlpha = main ? 0.25 : 0.12; ctx.shadowBlur = 0;
+      ctx.save(); ctx.beginPath(); ctx.rect(X(tNow), 0, w, h); ctx.clip();
+      ctx.beginPath(); pts.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col]))); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  }
+  if (tNow != null) {
+    ctx.strokeStyle = '#f2f4f9'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(tNow), 0); ctx.lineTo(X(tNow), h); ctx.stroke();
+  }
+}
+
+// Whole session graph
+let geo = null;
+function drawGraph() {
+  const canvas = document.getElementById('graph');
+  const [ctx, w, h] = setup(canvas);
+  if (!R.length) return;
+  const t0 = R[0][0], t1 = R[R.length - 1][0];
+  const padL = 8, padR = 8, padB = 22;
+  const X = t => padL + (t - t0) / Math.max(1, t1 - t0) * (w - padL - padR);
+  const Y = v => (h - padB) * 0.58 - Math.max(-4, Math.min(8, v)) * ((h - padB) / 14);
+  geo = {t0, t1, padL, padR, w};
+
+  ctx.fillStyle = 'rgba(138,147,166,0.07)';
+  ctx.fillRect(X(t0), 0, X(D.baseline_s) - X(t0), h - padB);
+  ctx.fillStyle = '#8a93a6'; ctx.font = '600 12px Inter, system-ui';
+  ctx.fillText('warm-up', X(t0) + 6, 16);
+
+  for (const m of moments) {
+    const col = m.label === 'Hype' ? '255,79,134' : '63,211,255';
+    ctx.fillStyle = `rgba(${col},${m === current ? 0.3 : 0.12})`;
+    ctx.fillRect(X(m.clip_start), 0, X(m.clip_end) - X(m.clip_start), h - padB);
+    ctx.fillStyle = `rgb(${col})`; ctx.font = '700 13px "Space Grotesk", Inter, system-ui';
+    ctx.fillText('#' + m.id, X(m.clip_start) + 4, 16);
+  }
+  ctx.strokeStyle = '#232838'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(w - padR, Y(0)); ctx.stroke();
+
+  for (const [col, color] of [[2, '#3fd3ff'], [1, '#ff4f86']]) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    R.forEach((r, i) => i ? ctx.lineTo(X(r[0]), Y(r[col])) : ctx.moveTo(X(r[0]), Y(r[col])));
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#8a93a6'; ctx.font = '12px Inter, system-ui';
+  const step = (t1 - t0) > 600 ? 120 : 60;
+  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+    if (X(t) > w - 30) continue;
+    ctx.fillText(fmt(t), X(t) - 10, h - 6);
+  }
+  const tNow = nowT();
+  if (tNow != null && video.currentTime > 0) {
+    ctx.strokeStyle = '#f2f4f9'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(tNow), 0); ctx.lineTo(X(tNow), h - padB); ctx.stroke();
+  }
+}
+
+document.getElementById('graph').addEventListener('click', e => {
+  if (!geo) return;
+  const rect = e.target.getBoundingClientRect();
+  const t = geo.t0 + (e.clientX - rect.left - geo.padL) / (geo.w - geo.padL - geo.padR) * (geo.t1 - geo.t0);
+  const hit = moments.find(m => t >= m.clip_start && t <= m.clip_end);
+  if (hit) play(hit, false);
+});
+window.addEventListener('resize', () => { drawZoom(); drawGraph(); });
+drawGraph();
+if (hasClips) play(moments[0], false);
+</script>
+</body>
+</html>
